@@ -5,19 +5,19 @@
 
 # Grafik: https://app.datawrapper.de/chart/4z3Vb/publish
 
-# In[42]:
+# In[1]:
 
 
 import requests
 import pandas as pd
 from datetime import datetime
 from time import sleep
-from energy_settings import backdate
+from energy_settings import backdate, datawrapper_api_key, datawrapper_url, datawrapper_headers
 
 
 # Die Datumsangaben kommen im Unixformat. Sie werden in dieser Funktion umgewandelt.
 
-# In[10]:
+# In[2]:
 
 
 def date_formatter(elem):
@@ -29,7 +29,7 @@ def date_formatter(elem):
 
 # Die Daten werden für jedes Jahr separat beantragt. Für das Jahr 2022 liegen die Daten im Listenelement [4], für 2021 im [5]. Zuletzt werden die Datumsgangaben mit den Werten zusammengefügt und ausgegeben. Ob die werte den richtigen Daten zugeordnet werden, wurde zu Beginn stichprobenmässig überprüft.
 
-# In[11]:
+# In[3]:
 
 
 def data_requester(year):
@@ -67,7 +67,7 @@ def data_requester(year):
 # 
 # Für jedes gewünschte Jahr wird die Funktion angeworfen und die Daten dann in df vereint.
 
-# In[12]:
+# In[4]:
 
 
 df = pd.DataFrame()
@@ -83,7 +83,7 @@ for i in range(2021, 2023):
 
 # Formatieren
 
-# In[15]:
+# In[5]:
 
 
 df['date_time'] = df['date_unix'].apply(date_formatter)
@@ -96,7 +96,7 @@ df['date_only'] = df['date_time'].dt.date
 
 # Für jeden Tag den Durchschnitt errechnen
 
-# In[18]:
+# In[6]:
 
 
 df_final = df.groupby('date_only')['values_day_ahead'].mean().to_frame()
@@ -104,7 +104,7 @@ df_final = df.groupby('date_only')['values_day_ahead'].mean().to_frame()
 
 # Export
 
-# In[36]:
+# In[ ]:
 
 
 #Backup
@@ -112,4 +112,46 @@ df_final.to_csv(f'/root/energiemonitor/backups/strom/preis_spotmarkt_{backdate(0
 
 #Data
 df_final.to_csv('/root/energiemonitor/data/strom/preis_spotmarkt.csv')
+
+
+# **Datawrapper-Update**
+
+# In[14]:
+
+
+last_updated = df_final.index[-1]
+last_updated = last_updated.strftime('%d. %B %Y')
+
+
+# In[15]:
+
+
+chart_id = '4z3Vb'
+
+
+# In[20]:
+
+
+def chart_updater(chart_id, last_updated):
+
+    url_update = datawrapper_url + chart_id
+    url_publish = url_update + '/publish'
+
+    payload = {
+
+    'metadata': {'annotate': {'notes': f'Aktualisiert am {last_updated}.'}}
+
+    }
+
+    res_update = requests.patch(url_update, json=payload, headers=datawrapper_headers)
+
+    sleep(3)
+
+    res_publish = requests.post(url_publish, headers=datawrapper_headers)
+
+
+# In[21]:
+
+
+chart_updater(chart_id, last_updated)
 
