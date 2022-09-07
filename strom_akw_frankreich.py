@@ -226,7 +226,7 @@ df_end = df_end[:52].copy()
 
 
 #Backup
-df_end.to_csv('/root/energiemonitor/backups/strom/akw_frankreich.csv')
+df_end.to_csv(f'/root/energiemonitor/backups/strom/akw_frankreich_{backdate(0)}.csv')
 
 #Data
 df_end.to_csv('/root/energiemonitor/data/strom/akw_frankreich.csv')
