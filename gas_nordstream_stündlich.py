@@ -63,7 +63,7 @@ def data_requester(date_list):
     url_temp = url.format(date_list[0], date_list[1])
     df_temp = pd.read_csv(url_temp)
     df_temp = df_temp[(df_temp['operatorLabel'] == 'OPAL Gastransport') | (df_temp['operatorLabel'] == 'NEL Gastransport')].copy()
-    df_temp = (df_temp.groupby('periodFrom')['value'].sum() / 10**6).to_frame()
+    df_temp = (df_temp.groupby('periodTo')['value'].sum() / 10**6).to_frame()
     df_temp.reset_index(inplace=True)
     return df_temp
 
@@ -90,9 +90,9 @@ for frame, dates in date_dict.items():
 # In[6]:
 
 
-df['periodFrom'] = pd.to_datetime(df['periodFrom'])
-df['year'] = df['periodFrom'].dt.year
-df['date_datawrapper'] = df['periodFrom'].dt.strftime('%m-%d %H:%M')
+df['periodTo'] = pd.to_datetime(df['periodTo'])
+df['year'] = df['periodTo'].dt.year
+df['date_datawrapper'] = df['periodTo'].dt.strftime('%m-%d %H:%M')
 df['date_datawrapper'] = str('2022-') + df['date_datawrapper']
 df = df.pivot(index='date_datawrapper', columns='year', values='value')
 
@@ -107,13 +107,13 @@ df.to_csv('/root/energiemonitor/data/gas/nord_stream_stündlich.csv')
 
 # **Datawrapper-Update**
 
-# In[8]:
+# In[7]:
 
 
 chart_id = 'JkvZj'
 
 
-# In[9]:
+# In[8]:
 
 
 last_updated = pd.to_datetime(df.index[-1]).strftime('%-d. %B %Y, %-H') + ' Uhr'
@@ -132,7 +132,7 @@ ticks_end = df.index[-1].split(' ')[0]
 tick_string = f'{ticks_start}, {ticks_end}'
 
 
-# In[16]:
+# In[12]:
 
 
 def chart_updater(chart_id, tick_string, last_updated):
@@ -156,7 +156,7 @@ def chart_updater(chart_id, tick_string, last_updated):
     res_publish = requests.post(url_publish, headers=datawrapper_headers)
 
 
-# In[17]:
+# In[13]:
 
 
 chart_updater(chart_id, tick_string, last_updated)
