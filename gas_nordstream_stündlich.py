@@ -132,7 +132,7 @@ ticks_end = df.index[-1].split(' ')[0]
 tick_string = f'{ticks_start}, {ticks_end}'
 
 
-# In[12]:
+# In[16]:
 
 
 def chart_updater(chart_id, tick_string, last_updated):
@@ -142,8 +142,10 @@ def chart_updater(chart_id, tick_string, last_updated):
 
     payload = {
         
-        'visualize': {'custom-ticks-x': tick_string},
-        'metadata': {'annotate': {'notes': f'Wird mehrmals täglich aktualisiert. Datenstand: {last_updated}.'}}
+        'metadata': {
+                'visualize': {'custom-ticks-x': tick_string},
+                'annotate': {'notes': f'Wird mehrmals täglich aktualisiert. Datenstand: {last_updated}.'}
+        }
 
     }
 
@@ -154,7 +156,7 @@ def chart_updater(chart_id, tick_string, last_updated):
     res_publish = requests.post(url_publish, headers=datawrapper_headers)
 
 
-# In[13]:
+# In[17]:
 
 
 chart_updater(chart_id, tick_string, last_updated)
