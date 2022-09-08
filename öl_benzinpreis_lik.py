@@ -120,7 +120,7 @@ data_uploader(chart_id, df)
 
 # Lesebeispiel
 
-# In[16]:
+# In[9]:
 
 
 df_last = df.tail(1).copy()
@@ -138,7 +138,7 @@ intro = f'indexiert, Dezember 2020 = 100. Lesebeispiel: Der Benzinpreis war im {
 
 # Ticks
 
-# In[17]:
+# In[10]:
 
 
 date_today = datetime.today()
@@ -146,7 +146,7 @@ last_updated = date_today.strftime('%-d. %B %Y')
 last_month = df_last['Datum'].dt.month.values[0]
 
 
-# In[18]:
+# In[11]:
 
 
 if last_month == 12:
@@ -155,13 +155,13 @@ else:
     pass
 
 
-# In[19]:
+# In[12]:
 
 
 tick_string = f'2020-12-01, 2021-12-01, {curr_year}-{last_month}-01'
 
 
-# In[21]:
+# In[13]:
 
 
 def chart_updater(chart_id, tick_string, intro, last_updated):
@@ -185,7 +185,7 @@ def chart_updater(chart_id, tick_string, intro, last_updated):
     res_publish = requests.post(url_publish, headers=datawrapper_headers)
 
 
-# In[22]:
+# In[14]:
 
 
 chart_updater(chart_id, tick_string, intro, last_updated)
