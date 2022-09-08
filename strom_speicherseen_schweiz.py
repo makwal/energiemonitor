@@ -3,7 +3,7 @@
 
 # # Speichersee-Daten Schweiz
 
-# In[42]:
+# In[1]:
 
 
 import requests
@@ -15,19 +15,19 @@ from energy_settings import backdate, datawrapper_api_key, datawrapper_url, data
 
 # **Daten-Import**
 
-# In[43]:
+# In[2]:
 
 
 url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen.csv'
 
 
-# In[44]:
+# In[3]:
 
 
 df = pd.read_csv(url)
 
 
-# In[45]:
+# In[4]:
 
 
 df['Datum'] = pd.to_datetime(df['Datum'])
@@ -37,7 +37,7 @@ df['Datum'] = pd.to_datetime(df['Datum'])
 
 # Füllstand in Prozent errechnen
 
-# In[46]:
+# In[5]:
 
 
 df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_speicherinhalt_gwh']) * 100
@@ -45,7 +45,7 @@ df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_spe
 
 # Kalenderwochen-Angaben eruieren
 
-# In[47]:
+# In[6]:
 
 
 df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
@@ -53,7 +53,7 @@ df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
 
 # Für jede Kalenderwoche den Minimal-, Maximal- und mittleren Wert berechnen.
 
-# In[50]:
+# In[7]:
 
 
 df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].mean().to_frame()
@@ -63,7 +63,7 @@ df_min = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand to
 
 # Separates df für 2022
 
-# In[51]:
+# In[8]:
 
 
 df22 = df[df['Datum'] >= '2022-01-01'][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
@@ -71,7 +71,7 @@ df22 = df[df['Datum'] >= '2022-01-01'][['Kalenderwoche', 'Füllstand total']].se
 
 # Vorbereitung für nachfolgenden Join
 
-# In[52]:
+# In[9]:
 
 
 df_mean.rename(columns={'Füllstand total': 'Mittelwert'}, inplace=True)
@@ -82,13 +82,13 @@ df22.rename(columns={'Füllstand total': '2022'}, inplace=True)
 
 # Alle Daten zusammenfügen. Wichtig: Standard-Join, nicht how=outer, damit alle Kalenderwochen genommen werden (nicht jene des angebrochenen Jahres).
 
-# In[53]:
+# In[10]:
 
 
 df_final = df_mean.join([df_max, df_min, df22])
 
 
-# In[54]:
+# In[11]:
 
 
 df_final = df_final[['2022', 'Mittelwert', 'Maximum', 'Minimum']].copy()
@@ -96,7 +96,7 @@ df_final = df_final[['2022', 'Mittelwert', 'Maximum', 'Minimum']].copy()
 
 # **Export**
 
-# In[55]:
+# In[13]:
 
 
 #Backups
@@ -104,4 +104,55 @@ df_final.to_csv(f'/root/energiemonitor/backups/strom/speicherseen_ch_füllstand_
 
 #Data
 df_final.to_csv('/root/energiemonitor/data/strom/speicherseen_ch_füllstand.csv')
+
+
+# **Datawrapper-Update**
+
+# In[14]:
+
+
+last_updated = datetime.today().strftime('%d. %B %Y')
+
+latest_value = df_final[df_final['2022'].notna()]['2022'].tail(1).values[0]
+latest_value = str(latest_value.round(1)).replace('.', ',')
+
+
+# In[15]:
+
+
+chart_id = 'MXmZp'
+
+
+# In[16]:
+
+
+title = f'Füllstand der Schweizer Speicherseen: <u>{latest_value} Prozent</u> 🇨🇭'
+
+
+# In[17]:
+
+
+def chart_updater(chart_id, title, last_updated):
+
+    url_update = datawrapper_url + chart_id
+    url_publish = url_update + '/publish'
+
+    payload = {
+
+        'title': title,
+        'metadata': {'annotate': {'notes': f'Aktualisiert am {last_updated}.'}}
+
+    }
+
+    res_update = requests.patch(url_update, json=payload, headers=datawrapper_headers)
+
+    sleep(3)
+
+    res_publish = requests.post(url_publish, headers=datawrapper_headers)
+
+
+# In[18]:
+
+
+chart_updater(chart_id, title, last_updated)
 
