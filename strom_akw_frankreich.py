@@ -3,8 +3,6 @@
 
 # # Produktion der AKW in Frankreich
 
-# Grafik: https://app.datawrapper.de/chart/cYF47/visualize#refine
-
 # **API-Dokumentation Entso-E** 
 # 
 # https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
@@ -20,7 +18,7 @@
 # - in_Domain=10YFR-RTE------C heisst France (A.10. Areas)
 # - periodStart und periodEnd sind selbsterklärend
 
-# In[28]:
+# In[1]:
 
 
 import requests
@@ -29,10 +27,17 @@ from datetime import datetime, timedelta
 from time import sleep
 import xmltodict
 import json
-from energy_settings import api_key_entsoe, backdate, datawrapper_api_key, datawrapper_url, datawrapper_headers
+from energy_settings import (
+    api_key_entsoe,
+    backdate,
+    curr_year,
+    datawrapper_api_key,
+    datawrapper_url,
+    datawrapper_headers
+)
 
 
-# In[29]:
+# In[2]:
 
 
 api_key = api_key_entsoe
@@ -40,12 +45,11 @@ api_key = api_key_entsoe
 
 # **Generelle Variablen, die später gebraucht werden**
 
-# In[30]:
+# In[3]:
 
 
 start_period = '01010000'
 end_period = '12312300'
-curr_year = datetime.now().year
 today = datetime.now().date()
 today = today.strftime('%Y-%m-%d')
 
@@ -54,7 +58,7 @@ today = today.strftime('%Y-%m-%d')
 
 # Funktion, die die Daten herunterlädt
 
-# In[31]:
+# In[4]:
 
 
 def requester(start_date, end_date):
@@ -77,7 +81,7 @@ def requester(start_date, end_date):
 # 
 # Quelle: Seite 11 https://transparency.entsoe.eu/content/static_content/download?path=/Static%20content/knowledge%20base/entso-e-transparency-xml-schema-use-1-0.pdf&loggedUserIsPrivileged=false
 
-# In[32]:
+# In[5]:
 
 
 def minute_maker(x, start_time):
@@ -88,7 +92,7 @@ def minute_maker(x, start_time):
 
 # Funktion, die für jedes Jahr im Datensatz ein df erstellt. Die Daten werden pro Jahr abgefragt, siehe unten. Pro Jahr sind sie aber nochmals portioniert. Darum werden die einzelnen Portionen in einem For-Loop in ein df_temp gespeichert und dann dem df_year hinzugefügt.
 
-# In[33]:
+# In[6]:
 
 
 def data_wrangler(res):
@@ -222,7 +226,7 @@ df_end = df_end[:52].copy()
 
 # Export
 
-# In[17]:
+# In[ ]:
 
 
 #Backup
@@ -234,7 +238,7 @@ df_end.to_csv('/root/energiemonitor/data/strom/akw_frankreich.csv')
 
 # **Datawrapper-Update**
 
-# In[23]:
+# In[17]:
 
 
 last_updated = datetime.today()
@@ -245,13 +249,13 @@ year_week = str(datetime.today().year) + f'-W{last_week}'
 monday_of_last_week = datetime.strptime(year_week + '-1', "%Y-W%W-%w")
 
 
-# In[24]:
+# In[18]:
 
 
 chart_id = 'cYF47'
 
 
-# In[25]:
+# In[19]:
 
 
 def chart_updater(chart_id, note):
@@ -272,14 +276,14 @@ def chart_updater(chart_id, note):
     res_publish = requests.post(url_publish, headers=datawrapper_headers)
 
 
-# In[26]:
+# In[20]:
 
 
 if last_updated - timedelta(days=16) <= monday_of_last_week:
 
-    last_updated_str = last_updated.strftime('%d. %B %Y')
+    last_updated_str = last_updated.strftime('%-d. %B %Y')
 
-    note = f'Minimum, Maximum und Mittelwert der Jahre 2015 bis 2021. Aktualisiert am {last_updated_str}.'
+    note = f'Minimum, Maximum und Mittelwert der Jahre 2015 bis 2021. Wird wöchentlich aktualisiert, zuletzt am {last_updated_str}.'
 
     chart_updater(chart_id, note)
 
