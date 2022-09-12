@@ -144,7 +144,7 @@ def chart_updater(chart_id, tick_string, last_updated):
         
         'metadata': {
                 'visualize': {'custom-ticks-x': tick_string},
-                'annotate': {'notes': f'Wird mehrmals täglich aktualisiert. Datenstand: {last_updated}.'}
+                'annotate': {'notes': f'Wird täglich aktualisiert. Datenstand: {last_updated}.'}
         }
 
     }
