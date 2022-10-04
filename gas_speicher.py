@@ -17,7 +17,7 @@ from energy_settings import (
     datawrapper_headers
 )
 import locale
-locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 
 # In[2]:
