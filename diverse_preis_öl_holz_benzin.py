@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[4]:
+# https://www.bfs.admin.ch/bfs/de/home/statistiken/kataloge-datenbanken/tabellen.assetdetail.23527385.html
+
+# In[1]:
 
 
 import requests
@@ -15,21 +17,23 @@ from energy_settings import (
     datawrapper_headers,
     curr_year
 )
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
 
 # **Daten-Import** die url muss jeden Monat angepasst werden!
 
-# In[10]:
+# In[2]:
 
 
-url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/23344572/master'
+url = 'https://dam-api.bfs.admin.ch/hub/api/dam/assets/23527385/master'
 
 df_import = pd.read_excel(url, sheet_name='Monat - Mois')
 
 
 # Formatieren
 
-# In[11]:
+# In[3]:
 
 
 df_import.columns = df_import.iloc[2].values
@@ -40,7 +44,7 @@ df_import.columns.values[15] = 'Heizöl'
 
 # Nur mit notwendigen Daten weiterfahren
 
-# In[12]:
+# In[4]:
 
 
 df = df_import[['date', 'Heizöl', 'Holz / Bois', 'Treibstoff / Carburants']].copy()
@@ -48,7 +52,7 @@ df = df_import[['date', 'Heizöl', 'Holz / Bois', 'Treibstoff / Carburants']].co
 
 # Die Spalten mit den unteren Zeilen umbenennen
 
-# In[13]:
+# In[5]:
 
 
 col_names = []
@@ -69,7 +73,7 @@ df.rename(columns={
 
 # Formatieren
 
-# In[15]:
+# In[6]:
 
 
 df = df.loc[5:].copy()
@@ -81,7 +85,7 @@ df['date'] = pd.to_datetime(df['date'])
 
 # Wir behalten nur die Daten seit Januar 2021
 
-# In[13]:
+# In[7]:
 
 
 df = df[df['date'] >= '2021-01-01'].copy()
@@ -89,7 +93,7 @@ df = df[df['date'] >= '2021-01-01'].copy()
 
 # **Datawrapper-Update**
 
-# In[14]:
+# In[8]:
 
 
 chart_ids = {
@@ -110,7 +114,7 @@ chart_ids = {
 
 # Daten in die Grafik laden
 
-# In[15]:
+# In[9]:
 
 
 def data_uploader(chart_id, df_func):
@@ -145,7 +149,7 @@ def data_uploader(chart_id, df_func):
 
 # Grafik-Beschreibung updaten
 
-# In[16]:
+# In[10]:
 
 
 date_today = datetime.today()
@@ -155,7 +159,7 @@ last_month = df['date'].tail(1).dt.month.values[0]
 
 # Wenn der Dezember der letzte Monat war, müssen wir vom aktuellen Jahr eins subtrahieren
 
-# In[17]:
+# In[11]:
 
 
 if last_month == 12:
@@ -164,13 +168,13 @@ else:
     pass
 
 
-# In[18]:
+# In[12]:
 
 
 tick_string = f'2021-01-01, 2021-12-01, {curr_year}-{last_month}-01'
 
 
-# In[19]:
+# In[13]:
 
 
 def chart_updater(chart_id, tick_string, intro, last_updated):
@@ -196,7 +200,7 @@ def chart_updater(chart_id, tick_string, intro, last_updated):
 
 # **Die Funktionen starten**
 
-# In[20]:
+# In[14]:
 
 
 for carrier, chart_info in chart_ids.items():

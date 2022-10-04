@@ -12,7 +12,7 @@
 # **Erklärung der url**
 # 
 # - base_url = 'https://web-api.tp.entsoe.eu/api'
-# - documentType=A75 heisst Actual generation per type (A.9. DocumentType
+# - documentType=A75 heisst Actual generation per type (A.9. DocumentType)
 # - &processType=A16 heisst realised (A.7. ProcessType)
 # - psrType=B14 heisst nuclear (A.5. PsrType)
 # - in_Domain=10YFR-RTE------C heisst France (A.10. Areas)
@@ -35,6 +35,8 @@ from energy_settings import (
     datawrapper_url,
     datawrapper_headers
 )
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
 
 # In[2]:
@@ -71,6 +73,18 @@ def requester(start_date, end_date):
     raw_data = response_json['GL_MarketDocument']['TimeSeries']
     
     return raw_data
+
+
+# In[8]:
+
+
+r = requester('202209120000', '202209160000')
+
+
+# In[9]:
+
+
+r
 
 
 # Funktion, die gebraucht wird, um für jeden Wert das richtige Datum zu errechnen

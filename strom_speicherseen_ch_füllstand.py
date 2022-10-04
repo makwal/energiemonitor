@@ -17,6 +17,8 @@ from energy_settings import (
     datawrapper_url,
     datawrapper_headers
 )
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
 
 # **Daten-Import**

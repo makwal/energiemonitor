@@ -3,16 +3,12 @@
 
 # # Gasimport aus diversen Ländern
 
-# - Russland: https://app.datawrapper.de/chart/o4qLp/visualize#refine
-# - Norwegen: https://app.datawrapper.de/chart/Y83VN/visualize#refine
-# - Flüsigerdgas: https://app.datawrapper.de/chart/3FrFt/visualize#refine
-# - Algerien: https://app.datawrapper.de/chart/m9zNp/visualize#refine
-# - EU total: https://app.datawrapper.de/chart/4HTS3/visualize#refine
-
 # In[1]:
 
 
 import requests
+import zipfile
+import io
 import pandas as pd
 from datetime import datetime, timedelta
 from time import sleep
@@ -22,25 +18,53 @@ from energy_settings import (
     datawrapper_url,
     datawrapper_headers
 )
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
 
 # In[2]:
 
 
-df = pd.read_csv('Rohdaten/Bruegel/2022-09-06/country_data_2022-09-06.csv')
+today = datetime.today().strftime('%Y-%m-%d')
+
+
+# **Daten-Download**
+
+# In[3]:
+
+
+url = 'https://www.bruegel.org/sites/default/files/2022-09/Gas_tracker_update.zip'
+
+r = requests.get(url, stream=True)
+z = zipfile.ZipFile(io.BytesIO(r.content))
+z.extractall(f'Rohdaten/Bruegel/{today}')
+
+
+# In[4]:
+
+
+df = pd.read_csv(f'Rohdaten/Bruegel/2022-09-28/country_data_2022-09-27.csv')
 
 
 # Formatieren
 
-# In[3]:
+# In[5]:
 
 
 df = df.iloc[1:].copy()
 
 
+# Komma durch Punkt ersetzen
+
+# In[6]:
+
+
+df = df.replace(',', '', regex=True)
+
+
 # Für jedes Lieferantenland ein eigenes df erstellen
 
-# In[4]:
+# In[7]:
 
 
 df_eu = df[['week', 'EU_2022', 'EU_2021', 'EU_max', 'EU_min']].copy()
@@ -52,7 +76,7 @@ df_alg = df[['week', 'Algeria_2022', 'Algeria_2021', 'Algeria_max', 'Algeria_min
 
 # Spalten umbennen
 
-# In[5]:
+# In[8]:
 
 
 df_eu.rename(columns={
@@ -98,7 +122,7 @@ df_alg.rename(columns={
 
 # Exportieren
 
-# In[6]:
+# In[9]:
 
 
 #Data
@@ -109,7 +133,7 @@ df_nor.to_csv('Results/importe_norwegen.csv', index=False)
 df_alg.to_csv('Results/importe_algerien.csv', index=False)
 
 
-# In[7]:
+# In[10]:
 
 
 #Backups
@@ -129,7 +153,7 @@ df_alg.to_csv('Results/importe_algerien.csv', index=False)
 
 # **Datawrapper-Update**
 
-# In[8]:
+# In[11]:
 
 
 chart_ids = {
@@ -143,7 +167,7 @@ chart_ids = {
 
 # Angaben zu letzter Aktualisierung
 
-# In[9]:
+# In[12]:
 
 
 last_updated = datetime.today()
@@ -151,20 +175,20 @@ last_updated = datetime.today()
 
 # Um zu prüfen, ob die Daten tatsächlich aktualisiert wurden, wird das Datum vom Montag der Kalenderwoche eruiert, die den aktuellsten Wert im Datensatz hat.
 
-# In[10]:
+# In[13]:
 
 
 last_week = df_eu[df_eu['2022'].notna()]['Woche'].tail(1).values[0]
 
 
-# In[11]:
+# In[14]:
 
 
 year_week = str(datetime.today().year) + f'-W{last_week}'
 monday_of_last_week = datetime.strptime(year_week + '-1', "%Y-W%W-%w")
 
 
-# In[12]:
+# In[15]:
 
 
 def chart_updater(chart_id, note):
@@ -187,7 +211,7 @@ def chart_updater(chart_id, note):
 
 # Die Funktion wird nur ausgeführt, wenn heute minus 16 Tage vor dem Montag der aktuellsten Kalenderwoche liegt. Der Datensatz wird einmal wöchentlich aktualisiert, am Dienstag. Der Montag der letzten Kalenderwoche kann also 15 Tage zurück liegen und die Daten sind dennoch aktuell.
 
-# In[13]:
+# In[16]:
 
 
 for country, chart_id in chart_ids.items():

@@ -16,6 +16,8 @@ from energy_settings import (
     datawrapper_url,
     datawrapper_headers
 )
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
 
 # In[2]:
@@ -159,7 +161,7 @@ def chart_updater(chart_id, title, last_updated):
 
 # Die Grafik wird nur aktualisiert, wenn der letzte Wert nicht grösser ist als das Maximum der ganzen Reihe resp. nicht kleiner als das doppelte Minimum der Reihe. Damit soll verhindert werden, dass falsche Daten in die Grafik drücken.
 
-# In[ ]:
+# In[10]:
 
 
 for country, chart_id in chart_ids.items():

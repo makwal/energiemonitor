@@ -17,6 +17,8 @@ from energy_settings import (
     datawrapper_url,
     datawrapper_headers
 )
+import locale
+locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
 
 
 # **Daten-Import**
@@ -27,23 +29,23 @@ from energy_settings import (
 url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen.csv'
 
 
-# In[ ]:
+# In[3]:
 
 
 df = pd.read_csv(url)
 
 
-# In[ ]:
+# In[4]:
 
 
 df['Datum'] = pd.to_datetime(df['Datum'])
 
 
-# **Datenvearbeitung**
+# **Datenverarbeitung**
 
 # Absolute Veränderung errechnen
 
-# In[ ]:
+# In[5]:
 
 
 df['Füllstand Veränderung'] = df['TotalCH_speicherinhalt_gwh'].diff()
@@ -51,7 +53,7 @@ df['Füllstand Veränderung'] = df['TotalCH_speicherinhalt_gwh'].diff()
 
 # Kalenderwochen-Angaben eruieren
 
-# In[ ]:
+# In[6]:
 
 
 df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
@@ -60,7 +62,7 @@ df['Kalenderwoche_show'] = df['Datum'].dt.strftime('%YW%U')
 
 # Den Durchschnitt pro Kalenderwoche eruieren
 
-# In[ ]:
+# In[7]:
 
 
 df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand Veränderung'].mean().to_frame()
@@ -68,20 +70,20 @@ df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand V
 
 # df des aktuellen Jahrs erstellen, formatieren und am Schuss alle dfs zusammenfügen.
 
-# In[ ]:
+# In[8]:
 
 
 df22 = df[df['Datum'] >= '2022-01-01'][['Kalenderwoche', 'Füllstand Veränderung']].set_index('Kalenderwoche').copy()
 
 
-# In[ ]:
+# In[9]:
 
 
 df_mean.rename(columns={'Füllstand Veränderung': 'Mittelwert'}, inplace=True)
 df22.rename(columns={'Füllstand Veränderung': '2022'}, inplace=True)
 
 
-# In[ ]:
+# In[10]:
 
 
 df_final = df_mean.join(df22)
@@ -90,7 +92,7 @@ df_final.reset_index(inplace=True)
 
 # Kalenderwochenformat anpassen für Datawrapper
 
-# In[ ]:
+# In[11]:
 
 
 df_final['Kalenderwoche_show'] = '2022W' + df_final['Kalenderwoche'].astype(str)
@@ -99,13 +101,13 @@ df_final = df_final[['Kalenderwoche_show', '2022', 'Mittelwert']].copy()
 
 # Balkenfarbe für jede Woche bestimmen
 
-# In[ ]:
+# In[12]:
 
 
 df_color = df_final.copy()
 
 
-# In[ ]:
+# In[13]:
 
 
 df_color.loc[df_color['2022'] >= 0, 'farbe'] = '#e4d044'
