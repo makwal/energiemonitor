@@ -228,7 +228,7 @@ df_end = df_end[['date_show', '2022', 'Durchschnitt 2016-2021']].copy()
 # In[97]:
 
 
-df_end.to_csv('root/energiemonitor/data/gas/gas_verbrauch_schweiz.csv', index=False)
+df_end.to_csv('/root/energiemonitor/data/gas/gas_verbrauch_schweiz.csv', index=False)
 
 
 # **Datawrapper-Update**
