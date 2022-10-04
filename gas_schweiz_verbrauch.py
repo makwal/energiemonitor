@@ -170,7 +170,7 @@ df_final = df_final.iloc[:-1].copy()
 
 df_final['diff'] = df_final['import'] - df_final['export']
 
-print(df_final.iloc[-1])
+print(df_final.iloc[-2])
 # Formatieren
 
 # In[90]:
