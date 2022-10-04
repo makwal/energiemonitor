@@ -18,7 +18,7 @@ from energy_settings import (
     curr_year
 )
 import locale
-locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 
 # **Daten-Import** die url muss jeden Monat angepasst werden!
