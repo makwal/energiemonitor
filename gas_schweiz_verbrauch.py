@@ -82,10 +82,10 @@ for point, url in urls['import'].items():
 # In[12]:
 
 
-import_list = os.listdir('root/energiemonitor/gasverbrauch_daten/import')
+import_list = os.listdir('/root/energiemonitor/gasverbrauch_daten/import')
 
 for file in import_list:
-    dfi = pd.read_csv(f'root/energiemonitor/gasverbrauch_daten/import/{file}')
+    dfi = pd.read_csv(f'/root/energiemonitor/gasverbrauch_daten/import/{file}')
 
     df_import_curr = pd.concat([df_import_curr, dfi])
 
@@ -112,10 +112,10 @@ for point, url in urls['export'].items():
     df_export_curr = pd.concat([df_export_curr, df_e_temp])
     sleep(3)
 
-export_list = os.listdir('root/energiemonitor/gasverbrauch_daten/export')
+export_list = os.listdir('/root/energiemonitor/gasverbrauch_daten/export')
 
 for file in export_list:
-    dfe = pd.read_csv(f'root/energiemonitor/gasverbrauch_daten/export/{file}')
+    dfe = pd.read_csv(f'/root/energiemonitor/gasverbrauch_daten/export/{file}')
 
     df_export_curr = pd.concat([df_export_curr, dfe])
 
@@ -170,7 +170,7 @@ df_final = df_final.iloc[:-1].copy()
 
 df_final['diff'] = df_final['import'] - df_final['export']
 
-
+print(df_final.iloc[-1])
 # Formatieren
 
 # In[90]:
