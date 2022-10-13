@@ -110,8 +110,8 @@ df_color = df_final.copy()
 # In[13]:
 
 
-df_color.loc[df_color['2022'] >= 0, 'farbe'] = '#e4d044'
-df_color.loc[df_color['2022'] < 0, 'farbe'] = '#686000'
+df_color.loc[df_color['2022'] >= 0, 'farbe'] = '#f5c400'
+df_color.loc[df_color['2022'] < 0, 'farbe'] = '#7a5a00'
 df_color = df_color[df_color['2022'].notna()].copy()
 
 color_assign = df_color[['Kalenderwoche_show', 'farbe']].set_index('Kalenderwoche_show').to_dict()['farbe']
