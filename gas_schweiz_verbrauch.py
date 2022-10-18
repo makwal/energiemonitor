@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[7]:
+# In[1]:
 
 
 import os
@@ -22,13 +22,13 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 # **Abzufragende urls**
 
-# In[8]:
+# In[2]:
 
 
 base_url = 'https://transparency.entsog.eu/api/v1/operationalData.csv?forceDownload=true'
 
 
-# In[9]:
+# In[3]:
 
 
 urls = {
@@ -54,7 +54,7 @@ urls = {
 
 # **Import**
 
-# In[11]:
+# In[4]:
 
 
 df_import_curr = pd.DataFrame()
@@ -79,7 +79,18 @@ for point, url in urls['import'].items():
     sleep(3)
 
 
-# In[12]:
+# In[5]:
+
+
+#Import
+#/root/energiemonitor/gasverbrauch_rohdaten/import
+#/root/energiemonitor/gasverbrauch_rohdaten/import/{file}
+
+#Rohdaten/Rohdaten Gasverbrauch/Import
+#Rohdaten/Rohdaten Gasverbrauch/Import/{file}
+
+
+# In[6]:
 
 
 import_list = os.listdir('/root/energiemonitor/gasverbrauch_daten/import')
@@ -92,7 +103,7 @@ for file in import_list:
 
 # **Export**
 
-# In[16]:
+# In[7]:
 
 
 df_export_curr = pd.DataFrame()
@@ -112,6 +123,21 @@ for point, url in urls['export'].items():
     df_export_curr = pd.concat([df_export_curr, df_e_temp])
     sleep(3)
 
+
+# In[8]:
+
+
+#Export
+#/root/energiemonitor/gasverbrauch_rohdaten/export
+#/root/energiemonitor/gasverbrauch_rohdaten/export/{file}
+
+#Rohdaten/Rohdaten Gasverbrauch/Export
+#Rohdaten/Rohdaten Gasverbrauch/Export/{file}
+
+
+# In[9]:
+
+
 export_list = os.listdir('/root/energiemonitor/gasverbrauch_daten/export')
 
 for file in export_list:
@@ -119,10 +145,9 @@ for file in export_list:
 
     df_export_curr = pd.concat([df_export_curr, dfe])
 
-
 # **Daten für Wrangling vorbereiten**
 
-# In[85]:
+# In[63]:
 
 
 def data_preparator(df_func):
@@ -139,7 +164,7 @@ def data_preparator(df_func):
     return df_func
 
 
-# In[86]:
+# In[84]:
 
 
 df_import = data_preparator(df_import_curr)
@@ -148,7 +173,7 @@ df_export = data_preparator(df_export_curr)
 
 # **Merge Import/Export**
 
-# In[87]:
+# In[85]:
 
 
 df_final = df_import.merge(df_export, left_index=True, right_index=True, how='left')
@@ -157,41 +182,95 @@ df_final.rename(columns={'value_x': 'import', 'value_y': 'export'}, inplace=True
 
 # Den letzten Tag lassen wir draussen
 
-# In[88]:
+# In[87]:
 
 
-df_final = df_final.iloc[:-2].copy()
+df_final = df_final.iloc[:-1].copy()
+
+
+# Die Daten von Kilo- zu Gigawattstunden umformen
+
+# In[67]:
+
+
+df_final = df_final / 10**6
 
 
 # Die Import-Export-Differenz berechnen (das, was in der Schweiz bleibt)
 
-# In[89]:
+# In[68]:
 
 
 df_final['diff'] = df_final['import'] - df_final['export']
 
-# Formatieren
 
-# In[90]:
+# **Offset hinzufügen** Offset von rund 9000 Terawattstunden nach Erkundigung beim Beratungsunternehmen Enerprice hinzugefügt.
+
+# In[69]:
+
+
+df_final.index = pd.to_datetime(df_final.index)
+dfg = df_final['2021-01-01':'2021-12-31'].copy()
+
+
+# In[70]:
+
+
+dfg['gewicht'] = dfg['diff'] / dfg['diff'].sum()
+
+
+# In[71]:
 
 
 df_final.reset_index(inplace=True)
-df_final['date'] = pd.to_datetime(df_final['date'])
+dfg.reset_index(inplace=True)
+
+
+# In[72]:
+
+
+dfg['daymon'] = dfg['date'].dt.strftime('%m-%d')
+df_final['daymon'] = df_final['date'].dt.strftime('%m-%d')
+
+
+# In[73]:
+
+
+df_final = df_final.merge(dfg[['daymon', 'gewicht']], on='daymon', how='left')
+
+
+# In[74]:
+
+
+df_final.loc[df_final['date'] >= '2021-01-01', 'zusatz'] = 9190 * df_final['gewicht']
+
+
+# In[75]:
+
+
+df_final['diff_neu'] = df_final['diff'] + df_final['zusatz']
+
+
+# Formatieren
+
+# In[77]:
+
+
 df_final['year'] = df_final['date'].dt.year
 df_final['date_show'] = '2022-' + df_final['date'].dt.strftime('%m-%d')
 
 
 # **Endberechnung** anhand des gleitenden 7-Tages-Medians (Median, weil es Ausreisser in den Daten hat)
 
-# In[91]:
+# In[78]:
 
 
-df_final['diff_rolling_median'] = df_final['diff'].rolling(7).median()
+df_final['diff_rolling_median'] = df_final['diff_neu'].rolling(7).median()
 
 
 # Mehrjährigen Durchschnitt berechnen und mit den Daten des aktuellen Jahrs mergen (2016 bis 2021, weil es 2015 grobe Ausreisser drin hat)
 
-# In[92]:
+# In[79]:
 
 
 df_mean = df_final[(df_final['year'] > 2015) & (df_final['year'] < 2022)].groupby('date_show')['diff_rolling_median'].mean().to_frame().rename(columns={'diff_rolling_median': 'Durchschnitt 2016-2021'})
@@ -200,23 +279,15 @@ df22 = df_final[df_final['year'] == 2022].set_index('date_show')[['diff_rolling_
 
 # Merge
 
-# In[93]:
+# In[80]:
 
 
 df_end = df_mean.merge(df22, left_index=True, right_index=True, how='left')
 
 
-# Die Daten von Kilo- zu Gigawattstunden umformen
-
-# In[94]:
-
-
-df_end = df_end / 10**6
-
-
 # Formatieren (u.a. den 29. Februar weglassen, da nur alle vier Jahre)
 
-# In[95]:
+# In[82]:
 
 
 df_end.reset_index(inplace=True)
@@ -224,7 +295,7 @@ df_end = df_end[df_end['date_show'] != '2022-02-29'].copy()
 df_end = df_end[['date_show', '2022', 'Durchschnitt 2016-2021']].copy()
 
 
-# In[97]:
+# In[ ]:
 
 
 df_end.to_csv('/root/energiemonitor/data/gas/gas_verbrauch_schweiz.csv', index=False)
@@ -232,7 +303,7 @@ df_end.to_csv('/root/energiemonitor/data/gas/gas_verbrauch_schweiz.csv', index=F
 
 # **Datawrapper-Update**
 
-# In[112]:
+# In[ ]:
 
 
 chart_id = 'fOPdl'
@@ -240,7 +311,7 @@ chart_id = 'fOPdl'
 last_updated = datetime.today().strftime('%-d. %B %Y')
 
 
-# In[113]:
+# In[ ]:
 
 
 def chart_updater(chart_id, last_updated):
@@ -251,7 +322,7 @@ def chart_updater(chart_id, last_updated):
     payload = {
 
     'metadata': {
-                'annotate': {'notes': f'Die letzten zwei Tage werden wegen unvollständiger Daten nicht berücksichtigt. Wird täglich aktualisiert, zuletzt am {last_updated}.'}}
+                'annotate': {'notes': f'Der heutige und der vorherige Tag werden wegen unvollständiger Daten nicht berücksichtigt. Wird täglich aktualisiert, zuletzt am {last_updated}.'}}
 
     }
 
@@ -262,7 +333,7 @@ def chart_updater(chart_id, last_updated):
     res_publish = requests.post(url_publish, headers=datawrapper_headers)
 
 
-# In[114]:
+# In[ ]:
 
 
 chart_updater(chart_id, last_updated)
