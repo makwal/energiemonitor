@@ -83,8 +83,8 @@ for point, url in urls['import'].items():
 
 
 #Import
-#/root/energiemonitor/gasverbrauch_rohdaten/import
-#/root/energiemonitor/gasverbrauch_rohdaten/import/{file}
+#/root/energiemonitor/gasverbrauch_daten/import
+#/root/energiemonitor/gasverbrauch_daten/import/{file}
 
 #Rohdaten/Rohdaten Gasverbrauch/Import
 #Rohdaten/Rohdaten Gasverbrauch/Import/{file}
@@ -128,8 +128,8 @@ for point, url in urls['export'].items():
 
 
 #Export
-#/root/energiemonitor/gasverbrauch_rohdaten/export
-#/root/energiemonitor/gasverbrauch_rohdaten/export/{file}
+#/root/energiemonitor/gasverbrauch_daten/export
+#/root/energiemonitor/gasverbrauch_daten/export/{file}
 
 #Rohdaten/Rohdaten Gasverbrauch/Export
 #Rohdaten/Rohdaten Gasverbrauch/Export/{file}
@@ -144,6 +144,7 @@ for file in export_list:
     dfe = pd.read_csv(f'/root/energiemonitor/gasverbrauch_daten/export/{file}')
 
     df_export_curr = pd.concat([df_export_curr, dfe])
+
 
 # **Daten für Wrangling vorbereiten**
 
@@ -322,7 +323,7 @@ def chart_updater(chart_id, last_updated):
     payload = {
 
     'metadata': {
-                'annotate': {'notes': f'Der heutige und der vorherige Tag werden wegen unvollständiger Daten nicht berücksichtigt. Wird täglich aktualisiert, zuletzt am {last_updated}.'}}
+                'annotate': {'notes': f'Letzte zwei Tage wegen unvollständiger Daten nicht berücksichtigt. In der Statistik fehlen derzeit rund 9 TWh Gas pro Jahr wegen Meldelücken. Diese Summe wird täglich gewichtet den gemeldeten Werten zugerechnet. Wird täglich aktualisiert, zuletzt am {last_updated}.'}}
 
     }
 
