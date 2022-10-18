@@ -160,7 +160,7 @@ df_final.rename(columns={'value_x': 'import', 'value_y': 'export'}, inplace=True
 # In[88]:
 
 
-df_final = df_final.iloc[:-2].copy()
+df_final = df_final.iloc[:-1].copy()
 
 
 # Die Import-Export-Differenz berechnen (das, was in der Schweiz bleibt)
