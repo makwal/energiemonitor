@@ -148,7 +148,7 @@ for file in export_list:
 
 # **Daten für Wrangling vorbereiten**
 
-# In[63]:
+# In[10]:
 
 
 def data_preparator(df_func):
@@ -165,7 +165,7 @@ def data_preparator(df_func):
     return df_func
 
 
-# In[84]:
+# In[11]:
 
 
 df_import = data_preparator(df_import_curr)
@@ -174,7 +174,7 @@ df_export = data_preparator(df_export_curr)
 
 # **Merge Import/Export**
 
-# In[85]:
+# In[12]:
 
 
 df_final = df_import.merge(df_export, left_index=True, right_index=True, how='left')
@@ -183,7 +183,7 @@ df_final.rename(columns={'value_x': 'import', 'value_y': 'export'}, inplace=True
 
 # Den letzten Tag lassen wir draussen
 
-# In[87]:
+# In[13]:
 
 
 df_final = df_final.iloc[:-1].copy()
@@ -191,7 +191,7 @@ df_final = df_final.iloc[:-1].copy()
 
 # Die Daten von Kilo- zu Gigawattstunden umformen
 
-# In[67]:
+# In[14]:
 
 
 df_final = df_final / 10**6
@@ -199,7 +199,7 @@ df_final = df_final / 10**6
 
 # Die Import-Export-Differenz berechnen (das, was in der Schweiz bleibt)
 
-# In[68]:
+# In[15]:
 
 
 df_final['diff'] = df_final['import'] - df_final['export']
@@ -207,54 +207,30 @@ df_final['diff'] = df_final['import'] - df_final['export']
 
 # **Offset hinzufügen** Offset von rund 9000 Terawattstunden nach Erkundigung beim Beratungsunternehmen Enerprice hinzugefügt.
 
-# In[69]:
+# In[16]:
 
 
 df_final.index = pd.to_datetime(df_final.index)
 dfg = df_final['2021-01-01':'2021-12-31'].copy()
 
-
-# In[70]:
-
-
 dfg['gewicht'] = dfg['diff'] / dfg['diff'].sum()
-
-
-# In[71]:
-
 
 df_final.reset_index(inplace=True)
 dfg.reset_index(inplace=True)
 
-
-# In[72]:
-
-
 dfg['daymon'] = dfg['date'].dt.strftime('%m-%d')
 df_final['daymon'] = df_final['date'].dt.strftime('%m-%d')
 
-
-# In[73]:
-
-
 df_final = df_final.merge(dfg[['daymon', 'gewicht']], on='daymon', how='left')
 
-
-# In[74]:
-
-
 df_final.loc[df_final['date'] >= '2021-01-01', 'zusatz'] = 9190 * df_final['gewicht']
-
-
-# In[75]:
-
-
-df_final['diff_neu'] = df_final['diff'] + df_final['zusatz']
+df_final['diff'] = df_final['diff'] + df_final['zusatz'].fillna(0)
+#df_final['diff_neu'] = df_final['diff'] + df_final['zusatz']
 
 
 # Formatieren
 
-# In[77]:
+# In[17]:
 
 
 df_final['year'] = df_final['date'].dt.year
@@ -263,37 +239,49 @@ df_final['date_show'] = '2022-' + df_final['date'].dt.strftime('%m-%d')
 
 # **Endberechnung** anhand des gleitenden 7-Tages-Medians (Median, weil es Ausreisser in den Daten hat)
 
-# In[78]:
+# In[18]:
 
 
-df_final['diff_rolling_median'] = df_final['diff_neu'].rolling(7).median()
+df_final['diff_rolling_median'] = df_final['diff'].rolling(7).median()
 
 
-# Mehrjährigen Durchschnitt berechnen und mit den Daten des aktuellen Jahrs mergen (2016 bis 2021, weil es 2015 grobe Ausreisser drin hat)
+# Mehrjährigen Durchschnitt berechnen und mit den Daten des aktuellen Jahrs mergen (2016 bis 2021, weil es 2015 grobe Ausreisser drin hat).
+# 
+# Anmerkung 1.11.2022: Bis Klarheit über den genauen Offset und die Vervollständigung der Daten durch die Gasbranche herrscht, wird nur das Jahr 2021 als Referenzgrösse verwendet.
 
-# In[79]:
+# In[19]:
 
 
-df_mean = df_final[(df_final['year'] > 2015) & (df_final['year'] < 2022)].groupby('date_show')['diff_rolling_median'].mean().to_frame().rename(columns={'diff_rolling_median': 'Durchschnitt 2016-2021'})
+#df_mean = df_final[(df_final['year'] > 2015) & (df_final['year'] < 2022)].groupby('date_show')['diff_rolling_median'].mean().to_frame().rename(columns={'diff_rolling_median': 'Durchschnitt 2016-2021'})
+df_mean = df_final[df_final['year'] == 2021].rename(columns={'diff_rolling_median': '2021'}).copy()
 df22 = df_final[df_final['year'] == 2022].set_index('date_show')[['diff_rolling_median']].rename(columns={'diff_rolling_median': '2022'})
 
 
 # Merge
 
-# In[80]:
+# In[20]:
 
 
-df_end = df_mean.merge(df22, left_index=True, right_index=True, how='left')
+#df_end = df_mean.merge(df22, left_index=True, right_index=True, how='left')
+df_end = df_mean.merge(df22, left_on='date_show', right_index=True, how='left')
 
 
 # Formatieren (u.a. den 29. Februar weglassen, da nur alle vier Jahre)
 
-# In[82]:
+# In[21]:
 
 
 df_end.reset_index(inplace=True)
 df_end = df_end[df_end['date_show'] != '2022-02-29'].copy()
-df_end = df_end[['date_show', '2022', 'Durchschnitt 2016-2021']].copy()
+#df_end = df_end[['date_show', '2022', 'Durchschnitt 2016-2021']].copy()
+df_end = df_end[['date_show', '2022', '2021']].copy()
+
+
+# In[22]:
+
+
+#df_end.columns = ['date_show', '2022', 'Durchschnitt 2016-2021']
+df_end.columns = ['date_show', '2022', '2021']
 
 
 # In[ ]:
