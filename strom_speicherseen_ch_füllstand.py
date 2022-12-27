@@ -3,7 +3,7 @@
 
 # # Speichersee-Daten Schweiz: Füllstand
 
-# In[29]:
+# In[ ]:
 
 
 import requests
@@ -23,19 +23,19 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 # **Daten-Import**
 
-# In[30]:
+# In[ ]:
 
 
 url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen.csv'
 
 
-# In[31]:
+# In[ ]:
 
 
 df = pd.read_csv(url)
 
 
-# In[32]:
+# In[ ]:
 
 
 df['Datum'] = pd.to_datetime(df['Datum'])
@@ -45,7 +45,7 @@ df['Datum'] = pd.to_datetime(df['Datum'])
 
 # Füllstand in Prozent errechnen
 
-# In[33]:
+# In[ ]:
 
 
 df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_speicherinhalt_gwh']) * 100
@@ -53,21 +53,15 @@ df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_spe
 
 # Kalenderwochen-Angaben eruieren. Die Daten werden jeweils mit einem Montag angegeben, widerspiegeln aber den Stand der vorherigen Woche. Deshalb rechnen wir hier mit dem Sonntag.
 
-# In[34]:
+# In[ ]:
 
 
-df['Datum_neu'] = df['Datum'] - timedelta(days=1)
-
-
-# In[35]:
-
-
-df['Kalenderwoche'] = df['Datum_neu'].dt.isocalendar().week
+df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
 
 
 # Für jede Kalenderwoche den Minimal-, Maximal- und mittleren Wert berechnen.
 
-# In[36]:
+# In[ ]:
 
 
 df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].mean().to_frame()
@@ -77,15 +71,15 @@ df_min = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand to
 
 # Separates df für 2022
 
-# In[37]:
+# In[ ]:
 
 
-df22 = df[df['Datum_neu'] >= '2022-01-03'][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
+df22 = df[df['Datum'] >= '2022-01-01'][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
 
 
 # Vorbereitung für nachfolgenden Join
 
-# In[38]:
+# In[ ]:
 
 
 df_mean.rename(columns={'Füllstand total': 'Mittelwert'}, inplace=True)
@@ -96,16 +90,22 @@ df22.rename(columns={'Füllstand total': '2022'}, inplace=True)
 
 # Alle Daten zusammenfügen. Wichtig: Standard-Join, nicht how=outer, damit alle Kalenderwochen genommen werden (nicht jene des angebrochenen Jahres).
 
-# In[39]:
+# In[ ]:
 
 
 df_final = df_mean.join([df_max, df_min, df22])
 
 
-# In[40]:
+# In[ ]:
 
 
 df_final = df_final[['2022', 'Mittelwert', 'Maximum', 'Minimum']].copy()
+
+
+# In[ ]:
+
+
+df_final = df_final.loc[:52].copy()
 
 
 # **Export**
