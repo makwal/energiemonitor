@@ -60,9 +60,9 @@ df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
 # In[35]:
 
 
-df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].mean().to_frame()
-df_max = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].max().to_frame()
-df_min = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].min().to_frame()
+df_mean = df[df['Datum'] < '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].mean().to_frame()
+df_max = df[df['Datum'] < '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].max().to_frame()
+df_min = df[df['Datum'] < '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].min().to_frame()
 
 
 # Separates Dataframes für die Jahre seit 2022

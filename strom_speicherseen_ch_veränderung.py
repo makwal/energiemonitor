@@ -62,7 +62,7 @@ df['Kalenderwoche_show'] = df['Datum'].dt.strftime('%YW%U')
 # In[6]:
 
 
-df_mean = df[df['Datum'] <= f'{str(curr_year)}-01-01'].groupby('Kalenderwoche')['Füllstand Veränderung'].mean().to_frame()
+df_mean = df[df['Datum'] < f'{str(curr_year)}-01-01'].groupby('Kalenderwoche')['Füllstand Veränderung'].mean().to_frame()
 
 
 # df des aktuellen Jahrs erstellen, formatieren und am Schuss alle dfs zusammenfügen.
