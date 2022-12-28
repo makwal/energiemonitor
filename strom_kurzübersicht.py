@@ -125,16 +125,6 @@ mean_10d_prod = df_prod.tail(2).head(1)['mean_10d'].values[0]
 # In[10]:
 
 
-# df_prod['mean_10d'] = df_prod['Produktion_GWh'].rolling(10).mean()
-
-# production = df_prod[df_prod['Datum'] == yesterday]['Produktion_GWh'].values[0]
-
-# mean_10d_prod = df_prod[df_prod['Datum'] == day_before_yesterday]['mean_10d'].values[0]
-
-
-# In[11]:
-
-
 def texter_strom_prod(production, mean_10d_prod):
     diff_pct = (int(round(production)) - int(round(mean_10d_prod))) / int(round(mean_10d_prod)) * 100
     
@@ -158,6 +148,21 @@ def texter_strom_prod(production, mean_10d_prod):
 est_strom_prod = texter_strom_prod(production, mean_10d_prod)
 
 
+# Hier importieren wir die Ampelinformationen, Gefahrenstufe und dazugehöriger Text.
+
+# In[11]:
+
+
+ampel_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd108_stufen_energiemangellage.json'
+r = requests.get(ampel_url)
+r = r.json()
+
+res = r['ampel_status_strom'][0]
+
+level = res['level']
+titel = res['titel@de']
+
+
 # **Wetter**
 
 # Wir lesen die Tageswerte von Meteo Schweiz ein. Als Referenzmessstation dient Zürich-Fluntern (SMA). Wir greifen das Tagesmittel ab, das sich in der Spalte tre200d0 befindet. Als Vergleichswert bilden wir das Mittel der vorherigen 10 Tage.
@@ -169,28 +174,31 @@ weather_url = 'https://data.geo.admin.ch/ch.meteoschweiz.klima/nbcn-tageswerte/n
 
 df_weather = pd.read_csv(weather_url, delimiter=';')
 
-
-# In[13]:
-
-
 df_weather['date'] = pd.to_datetime(df_weather['date'], format='%Y%m%d')
 
 df_weather['mean_10d'] = df_weather['tre200d0'].rolling(10).mean()
 
 
-# Hinweis: Solange die gestrigen Wetterdaten nicht vorhanden sind, bricht das Skript hier ab (zB. am Montagmorgen).
+# Weil die Wetterdaten von gestern erst im Verlauf des Tages kommen, wir die Grafik aber schon am Morgen updaten, fügen wir die Wetterdaten dynamisch dazu.
 
-# In[14]:
+# In[13]:
 
 
-temperature = df_weather[df_weather['date'] == yesterday]['tre200d0'].values[0]
-
-mean_temp_10d = df_weather[df_weather['date'] == day_before_yesterday]['mean_10d'].values[0]
+try:
+    temperature = df_weather[df_weather['date'] == yesterday]['tre200d0'].values[0]
+    mean_temp_10d = df_weather[df_weather['date'] == day_before_yesterday]['mean_10d'].values[0]
+except IndexError as e:
+    temperature = 'nicht verfügbar'
+    
+try:
+    mean_temp_10d = df_weather[df_weather['date'] == day_before_yesterday]['mean_10d'].values[0]
+except IndexError as e:
+    mean_temp_10d = 'nicht verfügbar'
 
 
 # Anhand dieser Funktion wird der textliche Vergleich der aktuellsten Temperatur mit dem 10-Tage-Mittel gemacht.
 
-# In[15]:
+# In[14]:
 
 
 def texter_temp(temperature, mean_temp_10d):
@@ -210,42 +218,36 @@ def texter_temp(temperature, mean_temp_10d):
         return 'tieferen'
     elif diff <= -1:
         return 'leicht tieferen'
-    
-est_temp = texter_temp(temperature, mean_temp_10d)
-
-
-# Hier importieren wir die Ampelinformationen, Gefahrenstufe und dazugehöriger Text.
-
-# In[16]:
-
-
-ampel_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd108_stufen_energiemangellage.json'
-r = requests.get(ampel_url)
-r = r.json()
-
-res = r['ampel_status_strom'][0]
-
-level = res['level']
-titel = res['titel@de']
 
 
 # Hier werden die Texte zusammengesetzt und in ein DataFrame verpackt.
 
-# In[17]:
+# In[15]:
 
 
 icon_url = 'https://chm-editorial-data-static.s3.eu-west-1.amazonaws.com/red_mantel/energiedashboard/icons/blitz.png'
 
 text_usage = f'<strong style="font-size:32px">{int(round(usage))} GWh</strong>&nbsp <span style="letter-spacing:0.75px">geschätzter Wert</span>'
 
-text_comparison = f'''So viel <b>Strom</b> verbrauchte die Schweiz am {yesterday_str} (inkl. Speicherpumpen).<br><br> Das ist <b>{est_strom}</b> im Durchschnitt der vorherigen zehn Tage mit {int(round(mean_10d))} Gigawattstunden (GWh). Dies bei <strong>{est_temp}</strong> Temperaturen (Zürich).'''
+text_comparison = f'''So viel <b>Strom</b> verbrauchte die Schweiz am {yesterday_str} (inkl. Speicherpumpen).<br><br> Das ist <b>{est_strom}</b> im Durchschnitt der vorherigen zehn Tage mit {int(round(mean_10d))} Gigawattstunden (GWh). '''
 
 text_production = f'''Die Schweiz <b>produzierte</b> {int(round(production))} GWh Strom ({prod_date}, Schätzwert). Das ist <b>{est_strom_prod}</b> im Zehn-Tages-Durchschnitt mit {int(round(mean_10d_prod))} GWh.'''
 
 text_bundesrat = f'Beurteilung Bundesrat: <strong>{titel}</strong> (Gefahrenstufe {level} von 5)'
 
 
-# In[18]:
+# Den Temperaturteil fügen wir nur dazu, wenn die Angaben vorhanden sind.
+
+# In[16]:
+
+
+if temperature != 'nicht verfügbar' and mean_temp_10d != 'nicht verfügbar':
+    est_temp = texter_temp(temperature, mean_temp_10d)
+    
+    text_comparison += f' Dies bei <strong>{est_temp}</strong> Temperaturen (Zürich).'
+
+
+# In[17]:
 
 
 data = [
@@ -256,7 +258,7 @@ data = [
 ]
 
 
-# In[19]:
+# In[18]:
 
 
 df_final = pd.DataFrame(data)
@@ -264,7 +266,7 @@ df_final = pd.DataFrame(data)
 
 # **Datawrapper-Update**
 
-# In[20]:
+# In[19]:
 
 
 chart_id = 'YNAIQ'
@@ -272,7 +274,7 @@ chart_id = 'YNAIQ'
 
 # Daten in die Grafik laden.
 
-# In[21]:
+# In[20]:
 
 
 def data_uploader(chart_id, df_func):
@@ -306,7 +308,7 @@ def data_uploader(chart_id, df_func):
         print(chart_id + ': ' + str(status_code2))
 
 
-# In[22]:
+# In[21]:
 
 
 data_uploader(chart_id, df_final)
