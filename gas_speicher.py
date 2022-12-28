@@ -172,7 +172,7 @@ for country, chart_id in chart_ids.items():
     
     df_export, max_diff, min_diff, last_diff = data_finalizer(country)
     
-    last_updated = df_export[df_export[curr_year].notna()]['datawrapper_date'].tail(1).values[0]
+    last_updated = df_export[df_export[curr_year].notna()]['date_datawrapper'].tail(1).values[0]
     last_updated = pd.to_datetime(last_updated).strftime('%-d. %B %Y')
     
     note = f'''    Mittelwert, Maximum und Minimum der Jahre 2011 bis 2021.     Wird täglich aktualisiert. Datenstand: {last_updated}.    '''
