@@ -30,10 +30,10 @@ import json
 from energy_settings import (
     api_key_entsoe,
     backdate,
-    curr_year,
     datawrapper_api_key,
     datawrapper_url,
-    datawrapper_headers
+    datawrapper_headers,
+    curr_year
 )
 import locale
 locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
@@ -50,8 +50,8 @@ api_key = api_key_entsoe
 # In[3]:
 
 
-start_period = '01010000'
-end_period = '12312300'
+start_period = '01010000' #monattagzeitzeit, später kommt vorne das Jahr dran
+end_period = '12312300' #monattagzeitzeit, später kommt vorne das Jahr dran
 today = datetime.now().date()
 today = today.strftime('%Y-%m-%d')
 
@@ -73,18 +73,6 @@ def requester(start_date, end_date):
     raw_data = response_json['GL_MarketDocument']['TimeSeries']
     
     return raw_data
-
-
-# In[8]:
-
-
-r = requester('202209120000', '202209160000')
-
-
-# In[9]:
-
-
-r
 
 
 # Funktion, die gebraucht wird, um für jeden Wert das richtige Datum zu errechnen
@@ -197,25 +185,26 @@ df_final['week_num'] = df_final['date_only'].dt.isocalendar().week
 # In[12]:
 
 
-df_mean = df_final[df_final['date_only'] <= '2021-12-31'].groupby('week_num')['quantity'].mean().to_frame()
-df_max = df_final[df_final['date_only'] <= '2021-12-31'].groupby('week_num')['quantity'].max().to_frame()
-df_min = df_final[df_final['date_only'] <= '2021-12-31'].groupby('week_num')['quantity'].min().to_frame()
+df_mean = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['quantity'].mean().to_frame()
+df_max = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['quantity'].max().to_frame()
+df_min = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['quantity'].min().to_frame()
 
 
-# Für das Jahr 2022 machen wir ein eigenes df, das nur die Werte des aktuellen Jahres enthält und bis gestern geht.
+# Für die Jahre seit 2022 machen wir ein separates df. Es geht vom 1. Januar bis heute, lässt aber den 2. Januar 2022 aus, weil dieser Sonntag noch zur Kalenderwoche 52 des Jahres 2021 gehört.
 
 # In[13]:
 
 
-date_cond1 = df_final['date_only'] >= f'{curr_year}-01-01'
+df_final['year'] = df_final['date_only'].dt.year
+
+date_cond1 = df_final['date_only'] >= f'2022-01-01'
 date_cond2 = df_final['date_only'] != '2022-01-02'
 date_cond3 = df_final['date_only'] <= today
 
-df22 = df_final[(date_cond1) & (date_cond2) & (date_cond3)].copy()
-df22.set_index('week_num', inplace=True)
+df_curr = df_final[(date_cond1) & (date_cond2) & (date_cond3)].pivot(index='week_num', columns='year', values='quantity')
 
 
-# Wir benennen die Spalten um und fügen dann alle dfs mit join zusammen (outer, damit das finale df nicht beim aktuellen Stand 2022 abgeschnitten wird)
+# Wir benennen die Spalten um und fügen dann alle dfs mit join zusammen (outer, damit das finale df nicht beim aktuellen Stand das aktuelle Jahr abgeschnitten wird)
 
 # In[14]:
 
@@ -223,19 +212,31 @@ df22.set_index('week_num', inplace=True)
 df_mean.rename(columns={'quantity': 'Mittelwert'}, inplace=True)
 df_max.rename(columns={'quantity': 'Maximum'}, inplace=True)
 df_min.rename(columns={'quantity': 'Minimum'}, inplace=True)
-df22.rename(columns={'quantity': '2022'}, inplace=True)
 
 
 # In[15]:
 
 
-df_end = df22[['2022']].join([df_mean, df_max, df_min], how='outer')
+df_end = df_curr.join([df_mean, df_max, df_min], how='outer')
 
 
 # In[16]:
 
 
 df_end = df_end[:52].copy()
+
+
+# Die Spalten richtig sortieren (damit das aktuelle Jahr zuvorderst ist)
+
+# In[17]:
+
+
+curr_columns = df_curr.columns.tolist()
+curr_columns.sort(reverse=True)
+curr_columns.extend(['Mittelwert', 'Maximum', 'Minimum'])
+
+
+df_end = df_end[curr_columns].copy()
 
 
 # Export
@@ -252,24 +253,24 @@ df_end.to_csv('/root/energiemonitor/data/strom/akw_frankreich.csv')
 
 # **Datawrapper-Update**
 
-# In[17]:
+# In[ ]:
 
 
 last_updated = datetime.today()
 
-last_week = df_end[df_end['2022'].notna()].index[-1]
+last_week = df_end[df_end[curr_year].notna()].index[-1]
 
 year_week = str(datetime.today().year) + f'-W{last_week}'
 monday_of_last_week = datetime.strptime(year_week + '-1', "%Y-W%W-%w")
 
 
-# In[18]:
+# In[ ]:
 
 
 chart_id = 'cYF47'
 
 
-# In[19]:
+# In[ ]:
 
 
 def chart_updater(chart_id, note):
@@ -290,14 +291,14 @@ def chart_updater(chart_id, note):
     res_publish = requests.post(url_publish, headers=datawrapper_headers)
 
 
-# In[20]:
+# In[ ]:
 
 
 if last_updated - timedelta(days=16) <= monday_of_last_week:
 
     last_updated_str = last_updated.strftime('%-d. %B %Y')
 
-    note = f'Minimum, Maximum und Mittelwert der Jahre 2015 bis 2021. Wird wöchentlich aktualisiert, zuletzt am {last_updated_str}.'
+    note = f'Mittelwert, Maximum und Minimum der Jahre 2015 bis 2021. Wird wöchentlich aktualisiert, zuletzt am {last_updated_str}.'
 
     chart_updater(chart_id, note)
 
