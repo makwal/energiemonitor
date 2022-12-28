@@ -3,7 +3,7 @@
 
 # # Speichersee-Daten Schweiz: Füllstand
 
-# In[ ]:
+# In[30]:
 
 
 import requests
@@ -23,45 +23,41 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 # **Daten-Import**
 
-# In[ ]:
+# In[31]:
 
 
 url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen.csv'
 
 
-# In[ ]:
+# In[32]:
 
 
 df = pd.read_csv(url)
-
-
-# In[ ]:
-
-
-df['Datum'] = pd.to_datetime(df['Datum'])
 
 
 # **Datenvearbeitung**
 
 # Füllstand in Prozent errechnen
 
-# In[ ]:
+# In[33]:
 
 
 df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_speicherinhalt_gwh']) * 100
 
 
-# Kalenderwochen-Angaben eruieren. Die Daten werden jeweils mit einem Montag angegeben, widerspiegeln aber den Stand der vorherigen Woche. Deshalb rechnen wir hier mit dem Sonntag.
+# Kalenderwochen-Angaben eruieren.
 
-# In[ ]:
+# In[34]:
 
+
+df['Datum'] = pd.to_datetime(df['Datum'])
 
 df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
 
 
 # Für jede Kalenderwoche den Minimal-, Maximal- und mittleren Wert berechnen.
 
-# In[ ]:
+# In[35]:
 
 
 df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].mean().to_frame()
@@ -69,41 +65,35 @@ df_max = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand to
 df_min = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].min().to_frame()
 
 
-# Separates df für 2022
+# Separates Dataframes für die Jahre seit 2022
 
-# In[ ]:
+# In[36]:
 
 
-df22 = df[df['Datum'] >= '2022-01-01'][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
+df22 = df[(df['Datum'] >= '2022-01-01') & (df['Datum'] <= '2022-12-31')][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
+df23 = df[(df['Datum'] >= '2023-01-01') & (df['Datum'] <= '2023-12-31')][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
 
 
 # Vorbereitung für nachfolgenden Join
 
-# In[ ]:
+# In[37]:
 
 
 df_mean.rename(columns={'Füllstand total': 'Mittelwert'}, inplace=True)
 df_max.rename(columns={'Füllstand total': 'Maximum'}, inplace=True)
 df_min.rename(columns={'Füllstand total': 'Minimum'}, inplace=True)
 df22.rename(columns={'Füllstand total': '2022'}, inplace=True)
+df23.rename(columns={'Füllstand total': '2023'}, inplace=True)
 
 
 # Alle Daten zusammenfügen. Wichtig: Standard-Join, nicht how=outer, damit alle Kalenderwochen genommen werden (nicht jene des angebrochenen Jahres).
 
-# In[ ]:
+# In[45]:
 
 
-df_final = df_mean.join([df_max, df_min, df22])
+df_final = df_mean.join([df_max, df_min, df22, df23])
 
-
-# In[ ]:
-
-
-df_final = df_final[['2022', 'Mittelwert', 'Maximum', 'Minimum']].copy()
-
-
-# In[ ]:
-
+df_final = df_final[['2023', '2022', 'Mittelwert', 'Maximum', 'Minimum']].copy()
 
 df_final = df_final.loc[:52].copy()
 
@@ -146,7 +136,13 @@ title = f'Füllstand der Schweizer Speicherseen: <u>{latest_value} Prozent</u> �
 # In[ ]:
 
 
-def chart_updater(chart_id, title, last_updated):
+note = f'''Mittelwert, Maximum und Minimum der Jahre 2000 bis 2021. Wird wöchentlich aktualisiert, zuletzt am {last_updated}.'''
+
+
+# In[ ]:
+
+
+def chart_updater(chart_id, title, note):
 
     url_update = datawrapper_url + chart_id
     url_publish = url_update + '/publish'
@@ -154,7 +150,7 @@ def chart_updater(chart_id, title, last_updated):
     payload = {
 
         'title': title,
-        'metadata': {'annotate': {'notes': f'Wird wöchentlich aktualisiert, zuletzt am {last_updated}.'}}
+        'metadata': {'annotate': {'notes': note}}
 
     }
 
@@ -168,5 +164,5 @@ def chart_updater(chart_id, title, last_updated):
 # In[ ]:
 
 
-chart_updater(chart_id, title, last_updated)
+chart_updater(chart_id, title, note)
 
