@@ -124,7 +124,7 @@ df_final.to_csv('/root/energiemonitor/data/strom/speicherseen_ch_füllstand.csv'
 
 last_updated = datetime.today().strftime('%-d. %B %Y')
 
-latest_value = df_final[df_final['2022'].notna()]['2022'].tail(1).values[0]
+latest_value = df_final[df_final[curr_year].notna()][curr_year].tail(1).values[0]
 latest_value = str(latest_value.round(1)).replace('.', ',')
 
 
