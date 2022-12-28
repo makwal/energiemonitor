@@ -3,7 +3,7 @@
 
 # # Gasspeicher-Daten für Deutschland und Frankreich
 
-# In[1]:
+# In[3]:
 
 
 import requests
@@ -21,25 +21,25 @@ import locale
 locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 
-# In[ ]:
+# In[4]:
 
 
 headers = {'x-key': api_key_agsi}
 
 
-# In[ ]:
+# In[5]:
 
 
 countries = ['de', 'fr']
 
 
-# In[ ]:
+# In[6]:
 
 
 url = 'https://agsi.gie.eu/api?type=eu&country={}&size=300&page={}'
 
 
-# In[ ]:
+# In[7]:
 
 
 def data_requester(country, num):
@@ -51,7 +51,7 @@ def data_requester(country, num):
         return f'Fehler beim request: {r.status_code}'
 
 
-# In[ ]:
+# In[8]:
 
 
 def data_preparator(country_code):
@@ -73,7 +73,7 @@ def data_preparator(country_code):
     return df_country
 
 
-# In[ ]:
+# In[9]:
 
 
 def data_finalizer(country_code):
@@ -83,7 +83,7 @@ def data_finalizer(country_code):
     df['gasDayStart'] = pd.to_datetime(df['gasDayStart'])
     df['year'] = df['gasDayStart'].dt.year
     df['date_datawrapper'] = df['gasDayStart'].dt.strftime('%m-%d')
-    df['date_datawrapper'] = str('2022-') + df['date_datawrapper']
+    df['date_datawrapper'] = str(curr_year) + '-' + df['date_datawrapper']
     df.sort_values(by='gasDayStart', inplace=True)
     df['full'] = df['full'].astype(float)
     df.reset_index(drop=True, inplace=True)
@@ -172,7 +172,7 @@ for country, chart_id in chart_ids.items():
     
     df_export, max_diff, min_diff, last_diff = data_finalizer(country)
     
-    last_updated = df_export[df_export[curr_year].notna()]['date'].tail(1).values[0]
+    last_updated = df_export[df_export[curr_year].notna()]['datawrapper_date'].tail(1).values[0]
     last_updated = pd.to_datetime(last_updated).strftime('%-d. %B %Y')
     
     note = f'''    Mittelwert, Maximum und Minimum der Jahre 2011 bis 2021.     Wird täglich aktualisiert. Datenstand: {last_updated}.    '''
