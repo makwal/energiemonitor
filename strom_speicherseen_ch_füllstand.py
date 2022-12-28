@@ -3,7 +3,7 @@
 
 # # Speichersee-Daten Schweiz: Füllstand
 
-# In[30]:
+# In[1]:
 
 
 import requests
@@ -23,13 +23,13 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 # **Daten-Import**
 
-# In[31]:
+# In[2]:
 
 
 url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen.csv'
 
 
-# In[32]:
+# In[3]:
 
 
 df = pd.read_csv(url)
@@ -39,7 +39,7 @@ df = pd.read_csv(url)
 
 # Füllstand in Prozent errechnen
 
-# In[33]:
+# In[4]:
 
 
 df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_speicherinhalt_gwh']) * 100
@@ -47,7 +47,7 @@ df['Füllstand total'] = (df['TotalCH_speicherinhalt_gwh'] / df['TotalCH_max_spe
 
 # Kalenderwochen-Angaben eruieren.
 
-# In[34]:
+# In[5]:
 
 
 df['Datum'] = pd.to_datetime(df['Datum'])
@@ -57,7 +57,7 @@ df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
 
 # Für jede Kalenderwoche den Minimal-, Maximal- und mittleren Wert berechnen.
 
-# In[35]:
+# In[6]:
 
 
 df_mean = df[df['Datum'] < '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].mean().to_frame()
@@ -65,35 +65,42 @@ df_max = df[df['Datum'] < '2022-01-01'].groupby('Kalenderwoche')['Füllstand tot
 df_min = df[df['Datum'] < '2022-01-01'].groupby('Kalenderwoche')['Füllstand total'].min().to_frame()
 
 
-# Separates Dataframes für die Jahre seit 2022
+# Ein df für die letzten beiden Jahre.
 
-# In[36]:
+# In[7]:
 
 
-df22 = df[(df['Datum'] >= '2022-01-01') & (df['Datum'] <= '2022-12-31')][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
-df23 = df[(df['Datum'] >= '2023-01-01') & (df['Datum'] <= '2023-12-31')][['Kalenderwoche', 'Füllstand total']].set_index('Kalenderwoche')
+df['year'] = df['Datum'].dt.year
+
+
+# In[8]:
+
+
+df_curr = df[df['year'] >= 2022].pivot(index='Kalenderwoche', columns='year', values='Füllstand total')
 
 
 # Vorbereitung für nachfolgenden Join
 
-# In[37]:
+# In[9]:
 
 
 df_mean.rename(columns={'Füllstand total': 'Mittelwert'}, inplace=True)
 df_max.rename(columns={'Füllstand total': 'Maximum'}, inplace=True)
 df_min.rename(columns={'Füllstand total': 'Minimum'}, inplace=True)
-df22.rename(columns={'Füllstand total': '2022'}, inplace=True)
-df23.rename(columns={'Füllstand total': '2023'}, inplace=True)
 
 
 # Alle Daten zusammenfügen. Wichtig: Standard-Join, nicht how=outer, damit alle Kalenderwochen genommen werden (nicht jene des angebrochenen Jahres).
 
-# In[45]:
+# In[10]:
 
 
-df_final = df_mean.join([df_max, df_min, df22, df23])
+df_final = df_mean.join([df_max, df_min, df_curr])
 
-df_final = df_final[['2023', '2022', 'Mittelwert', 'Maximum', 'Minimum']].copy()
+curr_columns = df_curr.columns.tolist()
+curr_columns.sort(reverse=True)
+curr_columns.extend(['Mittelwert', 'Maximum', 'Minimum'])
+
+df_final = df_final[curr_columns].copy()
 
 df_final = df_final.loc[:52].copy()
 
