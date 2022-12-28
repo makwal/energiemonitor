@@ -283,7 +283,7 @@ df_end = df_end.reindex(sorted(df_end.columns, reverse=True), axis=1)
 # In[ ]:
 
 
-df_end.to_csv('/root/energiemonitor/data/gas/gas_verbrauch_schweiz.csv', index=False)
+df_end.to_csv('/root/energiemonitor/data/gas/gas_verbrauch_schweiz.csv')
 
 
 # **Datawrapper-Update**
