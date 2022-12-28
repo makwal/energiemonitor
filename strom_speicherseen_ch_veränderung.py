@@ -15,7 +15,8 @@ from energy_settings import (
     curr_year,
     datawrapper_api_key,
     datawrapper_url,
-    datawrapper_headers
+    datawrapper_headers,
+    curr_year
 )
 import locale
 locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
@@ -35,17 +36,11 @@ url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen
 df = pd.read_csv(url)
 
 
-# In[4]:
-
-
-df['Datum'] = pd.to_datetime(df['Datum'])
-
-
 # **Datenverarbeitung**
 
 # Absolute Veränderung errechnen
 
-# In[5]:
+# In[4]:
 
 
 df['Füllstand Veränderung'] = df['TotalCH_speicherinhalt_gwh'].diff()
@@ -53,8 +48,10 @@ df['Füllstand Veränderung'] = df['TotalCH_speicherinhalt_gwh'].diff()
 
 # Kalenderwochen-Angaben eruieren
 
-# In[6]:
+# In[5]:
 
+
+df['Datum'] = pd.to_datetime(df['Datum'])
 
 df['Kalenderwoche'] = df['Datum'].dt.isocalendar().week
 df['Kalenderwoche_show'] = df['Datum'].dt.strftime('%YW%U')
@@ -62,57 +59,59 @@ df['Kalenderwoche_show'] = df['Datum'].dt.strftime('%YW%U')
 
 # Den Durchschnitt pro Kalenderwoche eruieren
 
-# In[7]:
+# In[6]:
 
 
-df_mean = df[df['Datum'] <= '2022-01-01'].groupby('Kalenderwoche')['Füllstand Veränderung'].mean().to_frame()
+df_mean = df[df['Datum'] <= f'{str(curr_year)}-01-01'].groupby('Kalenderwoche')['Füllstand Veränderung'].mean().to_frame()
 
 
 # df des aktuellen Jahrs erstellen, formatieren und am Schuss alle dfs zusammenfügen.
 
-# In[9]:
+# In[7]:
 
 
-df22 = df[df['Datum'] >= '2022-01-03'][['Kalenderwoche', 'Füllstand Veränderung']].set_index('Kalenderwoche').copy()
-
-
-# In[11]:
-
+df_curr = df[df['Datum'] >= f'{str(curr_year)}-01-01'][['Kalenderwoche', 'Füllstand Veränderung']].set_index('Kalenderwoche').copy()
 
 df_mean.rename(columns={'Füllstand Veränderung': 'Mittelwert'}, inplace=True)
-df22.rename(columns={'Füllstand Veränderung': '2022'}, inplace=True)
+df_curr.rename(columns={'Füllstand Veränderung': str(curr_year)}, inplace=True)
 
-
-# In[12]:
-
-
-df_final = df_mean.join(df22)
+df_final = df_mean.join(df_curr)
 df_final.reset_index(inplace=True)
 
 
 # Kalenderwochenformat anpassen für Datawrapper
 
-# In[13]:
+# In[8]:
+
+
+df_final = df_final[df_final['Kalenderwoche'] <= 52].copy()
+
+
+# In[9]:
 
 
 df_final['Kalenderwoche_show'] = '2022W' + df_final['Kalenderwoche'].astype(str)
-df_final = df_final[['Kalenderwoche_show', '2022', 'Mittelwert']].copy()
+df_final = df_final[['Kalenderwoche_show', str(curr_year), 'Mittelwert']].copy()
 
 
 # Balkenfarbe für jede Woche bestimmen
 
-# In[ ]:
+# In[10]:
 
 
 df_color = df_final.copy()
 
 
-# In[ ]:
+# In[11]:
 
 
-df_color.loc[df_color['2022'] >= 0, 'farbe'] = '#f5c400'
-df_color.loc[df_color['2022'] < 0, 'farbe'] = '#7a5a00'
-df_color = df_color[df_color['2022'].notna()].copy()
+#gelb
+df_color.loc[df_color[str(curr_year)] >= 0, 'farbe'] = '#f4c237' #'#f5c400'
+
+#braun
+df_color.loc[df_color[str(curr_year)] < 0, 'farbe'] = '#946d0f' #'#7a5a00'
+
+df_color = df_color[df_color[str(curr_year)].notna()].copy()
 
 color_assign = df_color[['Kalenderwoche_show', 'farbe']].set_index('Kalenderwoche_show').to_dict()['farbe']
 
