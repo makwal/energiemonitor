@@ -23,7 +23,8 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 # In[2]:
 
 
-data_url = 'https://energiedashboard.admin.ch/api/strom-verbrauch/historical-values'
+#data_url_2022 = 'https://energiedashboard.admin.ch/api/strom-verbrauch/historical-values'
+data_url = 'https://energiedashboard.admin.ch/api/v2/strom-verbrauch/landesverbrauch-mit-prognose'
 
 r = requests.get(data_url)
 
@@ -56,7 +57,7 @@ df = df[df['date'] >= '2022-09-01'].copy()
 
 
 last_updated = df[df['Verbrauch geschätzt'].notna()].tail(1)['date']
-last_updated = (last_updated + timedelta(days=1)).dt.strftime('%d. %B %Y').values[0]
+last_updated = (last_updated + timedelta(days=1)).dt.strftime('%-d. %B %Y').values[0]
 
 
 # **Endverbrauch**
@@ -64,7 +65,8 @@ last_updated = (last_updated + timedelta(days=1)).dt.strftime('%d. %B %Y').value
 # In[7]:
 
 
-data_url_end = 'https://energiedashboard.admin.ch/api/strom-verbrauch/endverbrauch'
+#data_url_end_2022 = 'https://energiedashboard.admin.ch/api/strom-verbrauch/endverbrauch'
+data_url_end = 'https://energiedashboard.admin.ch/api/v2/strom-verbrauch/endverbrauch'
 
 res = requests.get(data_url_end)
 
