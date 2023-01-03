@@ -274,7 +274,7 @@ df_end = df_mean.merge(df_curr, left_on='date_show', right_index=True, how='left
 # In[ ]:
 
 
-df_end = df_end[df_end['date_show'] != '2022-02-29'].copy()
+df_end = df_end[df_end['date_show'] != f'{str(curr_year}-02-29'].copy()
 df_end.set_index('date_show', inplace=True)
 
 df_end = df_end.reindex(sorted(df_end.columns, reverse=True), axis=1)
