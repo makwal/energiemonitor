@@ -114,7 +114,7 @@ def data_finalizer(country_code):
 
     df_end.reset_index(inplace=True)
 
-    df_end = df_end[df_end['date_datawrapper'] != '2022-02-29'].copy()
+    df_end = df_end[df_end['date_datawrapper'] != f'{str(curr_year)}-02-29'].copy()
 
     all_columns = ['date_datawrapper']
 

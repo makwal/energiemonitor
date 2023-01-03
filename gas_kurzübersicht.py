@@ -235,12 +235,12 @@ def data_uploader(chart_id, df_func):
         print(chart_id + ': ' + str(status_code2))
 
 
-# Die Grafik wird nur aktualisiert, wenn der der aktuelle Gasimport-Wert nicht mehr als doppelt so gross ist wie der Durchschnitt der letzten 10 Tage. Wir haben vereinzelt unplausibel hohe Ausreisser in den Daten beobachtet. In einem solchen Fall soll die Grafik nicht aktualisiert werden (einzelne Tage betroffen.)
+# Die Grafik wird nur aktualisiert, wenn der der aktuelle Gasimport-Wert nicht mehr als dreimal so gross ist wie der Durchschnitt der letzten 10 Tage. Wir haben vereinzelt unplausibel hohe Ausreisser in den Daten beobachtet. In einem solchen Fall soll die Grafik nicht aktualisiert werden (einzelne Tage betroffen.)
 
 # In[17]:
 
 
-if net_import < mean_10d * 2:
+if net_import < mean_10d * 3:
     data_uploader(chart_id, df_final)
 
 
