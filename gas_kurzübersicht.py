@@ -30,7 +30,7 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 three_days_raw = datetime.today() - timedelta(days=3)
 three_days = three_days_raw.strftime('%Y-%m-%d')
-three_days_str = three_days_raw.strftime('%d. %B %Y')
+three_days_str = three_days_raw.strftime('%-d. %B %Y')
 
 four_days = (three_days_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 

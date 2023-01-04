@@ -30,7 +30,7 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 yesterday_raw = datetime.today() - timedelta(days=1)
 yesterday = yesterday_raw.strftime('%Y-%m-%d')
-yesterday_str = yesterday_raw.strftime('%d. %B %Y')
+yesterday_str = yesterday_raw.strftime('%-d. %B %Y')
 
 day_before_yesterday = (yesterday_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 
