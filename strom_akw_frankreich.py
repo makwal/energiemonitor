@@ -102,16 +102,11 @@ def data_wrangler(res):
     
     for i in range(len(res)):
         
-        try:
-            start_time = res[i]['Period']['timeInterval']['start']
-            start_time = pd.to_datetime(start_time)
+        start_time = res[i]['Period']['timeInterval']['start']
+        start_time = pd.to_datetime(start_time)
 
-            data = res[i]['Period']['Point']
-        except:
-            start_time = res['Period']['timeInterval']['start']
-            start_time = pd.to_datetime(start_time)
+        data = res[i]['Period']['Point']
 
-            data = res['Period']['Point']
         
         try:
             df_temp = pd.DataFrame(data)
@@ -162,11 +157,11 @@ for i in range(2015, curr_year + 1):
 
 # Bearbeitung von df_all
 
-# In[62]:
+# In[81]:
 
 
 df_all.reset_index(drop=True, inplace=True)
-df_all['quantity'] = df_all['quantity'].astype(int)
+#df_all['quantity'] = df_all['quantity'].astype(int)
 df_all = df_all[['date', 'quantity']].copy()
 
 df_all['date_only'] = df_all['date'].dt.date
@@ -178,7 +173,7 @@ df_all.set_index('date_only', inplace=True)
 
 # Wir entfernen Duplikate (Duplikate für den 1. Januar 2023 entdeckt)
 
-# In[67]:
+# In[82]:
 
 
 df_all.drop_duplicates(inplace=True)
@@ -186,7 +181,7 @@ df_all.drop_duplicates(inplace=True)
 
 # Daten zu wöchentlichem Intervall resamplen und gleichzeitig von Mega- zu Gigawatt umformen
 
-# In[68]:
+# In[83]:
 
 
 df_final = df_all[['quantity']].resample('W').sum() / 1000
@@ -201,7 +196,7 @@ df_final['week_num'] = df_final['year_week'].str.split('-').str[1]
 
 # Für jede Kalenderwoche den Minimal-, Maximal- und mittleren Wert berechnen.
 
-# In[69]:
+# In[84]:
 
 
 df_mean = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['quantity'].mean().to_frame()
@@ -211,7 +206,7 @@ df_min = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['qua
 
 # Für die Jahre seit 2022 machen wir ein separates df. Es geht vom 1. Januar bis heute, lässt aber den 2. Januar 2022 aus, weil dieser Sonntag noch zur Kalenderwoche 52 des Jahres 2021 gehört.
 
-# In[70]:
+# In[85]:
 
 
 date_cond1 = df_final['date_only'] >= '2022-01-01'
@@ -223,7 +218,7 @@ df_curr = df_final[(date_cond1) & (date_cond2) & (date_cond3)].pivot(index='week
 
 # Wir benennen die Spalten um und fügen dann alle dfs mit join zusammen (outer, damit das finale df nicht beim aktuellen Stand das aktuelle Jahr abgeschnitten wird)
 
-# In[71]:
+# In[86]:
 
 
 df_mean.rename(columns={'quantity': 'Mittelwert'}, inplace=True)
@@ -231,13 +226,13 @@ df_max.rename(columns={'quantity': 'Maximum'}, inplace=True)
 df_min.rename(columns={'quantity': 'Minimum'}, inplace=True)
 
 
-# In[72]:
+# In[87]:
 
 
 df_end = df_curr.join([df_mean, df_max, df_min], how='outer')
 
 
-# In[73]:
+# In[88]:
 
 
 df_end = df_end[:52].copy()
@@ -245,7 +240,7 @@ df_end = df_end[:52].copy()
 
 # Die Spalten richtig sortieren (damit das aktuelle Jahr zuvorderst ist)
 
-# In[74]:
+# In[89]:
 
 
 curr_columns = df_curr.columns.tolist()
@@ -275,8 +270,7 @@ df_end.to_csv('/root/energiemonitor/data/strom/akw_frankreich.csv')
 
 last_updated = datetime.today()
 
-#last_week = df_end[df_end[curr_year].notna()].index[-1]
-last_week = df_end[df_end['2022'].notna()].index[-1]
+last_week = df_end[df_end[curr_year].notna()].index[-1]
 
 year_week = str(datetime.today().year) + f'-W{last_week}'
 monday_of_last_week = datetime.strptime(year_week + '-1', "%Y-W%W-%w")
