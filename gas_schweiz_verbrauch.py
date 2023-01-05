@@ -61,7 +61,7 @@ urls = {
 df_import_curr = pd.DataFrame()
 
 for point, url in urls['import'].items():
-    u = (base_url + url).format('2022-01-01', '2022-12-31')
+    u = (base_url + url).format('2022-01-01', f'{str(curr_year)}-12-31')
 
     df_i_temp = pd.read_csv(u)
 
@@ -110,7 +110,7 @@ for file in import_list:
 df_export_curr = pd.DataFrame()
 
 for point, url in urls['export'].items():
-    u = (base_url + url).format('2022-01-01', '2022-12-31')
+    u = (base_url + url).format('2022-01-01', '2023-12-31')
 
     df_e_temp = pd.read_csv(u)
 
@@ -274,7 +274,7 @@ df_end = df_mean.merge(df_curr, left_on='date_show', right_index=True, how='left
 # In[ ]:
 
 
-df_end = df_end[df_end['date_show'] != f'{str(curr_year}-02-29'].copy()
+df_end = df_end[df_end['date_show'] != f'{str(curr_year)}-02-29'].copy()
 df_end.set_index('date_show', inplace=True)
 
 df_end = df_end.reindex(sorted(df_end.columns, reverse=True), axis=1)
