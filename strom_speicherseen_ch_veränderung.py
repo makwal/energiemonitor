@@ -3,7 +3,7 @@
 
 # # Speichersee-Daten Schweiz: Veränderung
 
-# In[1]:
+# In[ ]:
 
 
 import requests
@@ -24,13 +24,13 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 # **Daten-Import**
 
-# In[2]:
+# In[ ]:
 
 
 url = 'https://www.uvek-gis.admin.ch/BFE/ogd/17/ogd17_fuellungsgrad_speicherseen.csv'
 
 
-# In[3]:
+# In[ ]:
 
 
 df = pd.read_csv(url)
@@ -40,7 +40,7 @@ df = pd.read_csv(url)
 
 # Absolute Veränderung errechnen
 
-# In[4]:
+# In[ ]:
 
 
 df['Füllstand Veränderung'] = df['TotalCH_speicherinhalt_gwh'].diff()
@@ -48,7 +48,7 @@ df['Füllstand Veränderung'] = df['TotalCH_speicherinhalt_gwh'].diff()
 
 # Kalenderwochen-Angaben eruieren
 
-# In[5]:
+# In[ ]:
 
 
 df['Datum'] = pd.to_datetime(df['Datum'])
@@ -59,7 +59,7 @@ df['Kalenderwoche_show'] = df['Datum'].dt.strftime('%YW%U')
 
 # Den Durchschnitt pro Kalenderwoche eruieren
 
-# In[6]:
+# In[ ]:
 
 
 df_mean = df[df['Datum'] < f'{str(curr_year)}-01-01'].groupby('Kalenderwoche')['Füllstand Veränderung'].mean().to_frame()
@@ -67,7 +67,7 @@ df_mean = df[df['Datum'] < f'{str(curr_year)}-01-01'].groupby('Kalenderwoche')['
 
 # df des aktuellen Jahrs erstellen, formatieren und am Schuss alle dfs zusammenfügen.
 
-# In[7]:
+# In[ ]:
 
 
 df_curr = df[df['Datum'] >= f'{str(curr_year)}-01-01'][['Kalenderwoche', 'Füllstand Veränderung']].set_index('Kalenderwoche').copy()
@@ -81,28 +81,28 @@ df_final.reset_index(inplace=True)
 
 # Kalenderwochenformat anpassen für Datawrapper
 
-# In[8]:
+# In[ ]:
 
 
 df_final = df_final[df_final['Kalenderwoche'] <= 52].copy()
 
 
-# In[9]:
+# In[ ]:
 
 
-df_final['Kalenderwoche_show'] = '2022W' + df_final['Kalenderwoche'].astype(str)
+df_final['Kalenderwoche_show'] = f'{str(curr_year)}W' + df_final['Kalenderwoche'].astype(str)
 df_final = df_final[['Kalenderwoche_show', str(curr_year), 'Mittelwert']].copy()
 
 
 # Balkenfarbe für jede Woche bestimmen
 
-# In[10]:
+# In[ ]:
 
 
 df_color = df_final.copy()
 
 
-# In[11]:
+# In[ ]:
 
 
 #gelb
