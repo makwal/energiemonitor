@@ -188,6 +188,7 @@ df_all.drop_duplicates(inplace=True)
 
 # In[ ]:
 
+df_all['quantity'] = df_all['quantity'].astype(int)
 
 df_final = df_all[['quantity']].resample('W').sum() / 1000
 
@@ -275,7 +276,7 @@ df_end.to_csv('/root/energiemonitor/data/strom/akw_frankreich.csv')
 
 last_updated = datetime.today()
 
-last_week = df_end[df_end[curr_year].notna()].index[-1]
+last_week = df_end[df_end[str(curr_year)].notna()].index[-1]
 
 year_week = str(datetime.today().year) + f'-W{last_week}'
 monday_of_last_week = datetime.strptime(year_week + '-1', "%Y-W%W-%w")
