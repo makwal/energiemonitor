@@ -18,7 +18,7 @@
 # - in_Domain=10YFR-RTE------C heisst France (A.10. Areas)
 # - periodStart und periodEnd sind selbsterklärend
 
-# In[1]:
+# In[ ]:
 
 
 import requests
@@ -39,7 +39,7 @@ import locale
 locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 
-# In[2]:
+# In[ ]:
 
 
 api_key = api_key_entsoe
@@ -47,7 +47,7 @@ api_key = api_key_entsoe
 
 # **Generelle Variablen, die später gebraucht werden**
 
-# In[3]:
+# In[ ]:
 
 
 start_period = '01010000' #monattagzeitzeit, später kommt vorne das Jahr dran
@@ -60,7 +60,7 @@ today = today.strftime('%Y-%m-%d')
 
 # Funktion, die die Daten herunterlädt
 
-# In[4]:
+# In[ ]:
 
 
 def requester(start_date, end_date):
@@ -83,7 +83,7 @@ def requester(start_date, end_date):
 # 
 # Quelle: Seite 11 https://transparency.entsoe.eu/content/static_content/download?path=/Static%20content/knowledge%20base/entso-e-transparency-xml-schema-use-1-0.pdf&loggedUserIsPrivileged=false
 
-# In[5]:
+# In[ ]:
 
 
 def minute_maker(x, start_time):
@@ -94,7 +94,7 @@ def minute_maker(x, start_time):
 
 # Funktion, die für jedes Jahr im Datensatz ein df erstellt. Die Daten werden pro Jahr abgefragt, siehe unten. Pro Jahr sind sie aber nochmals portioniert. Darum werden die einzelnen Portionen in einem For-Loop in ein df_temp gespeichert und dann dem df_year hinzugefügt.
 
-# In[6]:
+# In[ ]:
 
 
 def data_wrangler(res):
@@ -102,10 +102,14 @@ def data_wrangler(res):
     
     for i in range(len(res)):
         
-        start_time = res[i]['Period']['timeInterval']['start']
+        try:
+            start_time = res[i]['Period']['timeInterval']['start']
+            data = res[i]['Period']['Point']
+        except KeyError:
+            start_time = res['Period']['timeInterval']['start']
+            data = res['Period']['Point']
+        
         start_time = pd.to_datetime(start_time)
-
-        data = res[i]['Period']['Point']
 
         
         try:
@@ -120,7 +124,7 @@ def data_wrangler(res):
     return df_year
 
 
-# In[7]:
+# In[ ]:
 
 
 def main_function(start_date, end_date):
@@ -135,7 +139,7 @@ def main_function(start_date, end_date):
 
 # **Funktion ausführen**
 
-# In[8]:
+# In[ ]:
 
 
 df_all = pd.DataFrame()
@@ -143,10 +147,11 @@ df_all = pd.DataFrame()
 
 # Hier kommen die df_year zurück und werden zum grossen ganzen df_all zusammengefügt.
 
-# In[9]:
+# In[ ]:
 
 
 for i in range(2015, curr_year + 1):
+    
     start_date = str(i) + start_period
     end_date = str(i) + end_period
         
@@ -157,7 +162,7 @@ for i in range(2015, curr_year + 1):
 
 # Bearbeitung von df_all
 
-# In[81]:
+# In[ ]:
 
 
 df_all.reset_index(drop=True, inplace=True)
@@ -173,7 +178,7 @@ df_all.set_index('date_only', inplace=True)
 
 # Wir entfernen Duplikate (Duplikate für den 1. Januar 2023 entdeckt)
 
-# In[82]:
+# In[ ]:
 
 
 df_all.drop_duplicates(inplace=True)
@@ -181,7 +186,7 @@ df_all.drop_duplicates(inplace=True)
 
 # Daten zu wöchentlichem Intervall resamplen und gleichzeitig von Mega- zu Gigawatt umformen
 
-# In[83]:
+# In[ ]:
 
 
 df_final = df_all[['quantity']].resample('W').sum() / 1000
@@ -196,7 +201,7 @@ df_final['week_num'] = df_final['year_week'].str.split('-').str[1]
 
 # Für jede Kalenderwoche den Minimal-, Maximal- und mittleren Wert berechnen.
 
-# In[84]:
+# In[ ]:
 
 
 df_mean = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['quantity'].mean().to_frame()
@@ -206,7 +211,7 @@ df_min = df_final[df_final['date_only'] < '2022-01-01'].groupby('week_num')['qua
 
 # Für die Jahre seit 2022 machen wir ein separates df. Es geht vom 1. Januar bis heute, lässt aber den 2. Januar 2022 aus, weil dieser Sonntag noch zur Kalenderwoche 52 des Jahres 2021 gehört.
 
-# In[85]:
+# In[ ]:
 
 
 date_cond1 = df_final['date_only'] >= '2022-01-01'
@@ -218,7 +223,7 @@ df_curr = df_final[(date_cond1) & (date_cond2) & (date_cond3)].pivot(index='week
 
 # Wir benennen die Spalten um und fügen dann alle dfs mit join zusammen (outer, damit das finale df nicht beim aktuellen Stand das aktuelle Jahr abgeschnitten wird)
 
-# In[86]:
+# In[ ]:
 
 
 df_mean.rename(columns={'quantity': 'Mittelwert'}, inplace=True)
@@ -226,13 +231,13 @@ df_max.rename(columns={'quantity': 'Maximum'}, inplace=True)
 df_min.rename(columns={'quantity': 'Minimum'}, inplace=True)
 
 
-# In[87]:
+# In[ ]:
 
 
 df_end = df_curr.join([df_mean, df_max, df_min], how='outer')
 
 
-# In[88]:
+# In[ ]:
 
 
 df_end = df_end[:52].copy()
@@ -240,7 +245,7 @@ df_end = df_end[:52].copy()
 
 # Die Spalten richtig sortieren (damit das aktuelle Jahr zuvorderst ist)
 
-# In[89]:
+# In[ ]:
 
 
 curr_columns = df_curr.columns.tolist()
@@ -265,7 +270,7 @@ df_end.to_csv('/root/energiemonitor/data/strom/akw_frankreich.csv')
 
 # **Datawrapper-Update**
 
-# In[77]:
+# In[ ]:
 
 
 last_updated = datetime.today()
