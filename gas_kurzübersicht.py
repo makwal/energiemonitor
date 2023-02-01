@@ -30,7 +30,7 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 three_days_raw = datetime.today() - timedelta(days=3)
 three_days = three_days_raw.strftime('%Y-%m-%d')
-three_days_str = three_days_raw.strftime('%-d. %B %Y')
+three_days_str = three_days_raw.strftime('%d. %B %Y')
 
 four_days = (three_days_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 
@@ -45,7 +45,7 @@ data_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd101_gas_import_
 df = pd.read_csv(data_url)
 
 
-# Wegen doppelter Einträge im Datensatz entfernen wir die Duplikate und behalten nur den aktuellesten Eintrag pro Tag.
+# Wegen doppelter Einträge im Datensatz entfernen wir die Duplikate und behalten nur den aktuellesten Eintrag pro Tag. Ebenfalls eliminieren wir unplausible Einträge, konkret Negativwerte.
 
 # In[4]:
 
@@ -53,6 +53,8 @@ df = pd.read_csv(data_url)
 df['Datum'] = pd.to_datetime(df['Datum'])
 
 df.drop_duplicates(subset=['Datum'], keep='last', inplace=True)
+
+df = df[df['Nettoimport_CH_GWh'] > 0].copy()
 
 
 # Wir bilden das 10-Tages-Mittel und extrahieren den aktuellsten Tageswert sowie das 10-Tages-Mittel des Tages zuvor.
@@ -193,7 +195,7 @@ df_final = pd.DataFrame(data)
 
 # **Datawrapper-Update**
 
-# In[15]:
+# In[16]:
 
 
 chart_id = 'bRi1m'
@@ -201,7 +203,7 @@ chart_id = 'bRi1m'
 
 # Daten in die Grafik laden
 
-# In[16]:
+# In[17]:
 
 
 def data_uploader(chart_id, df_func):
@@ -237,10 +239,11 @@ def data_uploader(chart_id, df_func):
 
 # Die Grafik wird nur aktualisiert, wenn der der aktuelle Gasimport-Wert nicht mehr als dreimal so gross ist wie der Durchschnitt der letzten 10 Tage. Wir haben vereinzelt unplausibel hohe Ausreisser in den Daten beobachtet. In einem solchen Fall soll die Grafik nicht aktualisiert werden (einzelne Tage betroffen.)
 
-# In[17]:
+# In[18]:
 
 
 if net_import < mean_10d * 3:
+    print('yes')
     data_uploader(chart_id, df_final)
 
 
