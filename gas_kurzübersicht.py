@@ -30,7 +30,7 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 three_days_raw = datetime.today() - timedelta(days=3)
 three_days = three_days_raw.strftime('%Y-%m-%d')
-three_days_str = three_days_raw.strftime('%d. %B %Y')
+three_days_str = three_days_raw.strftime('%-d. %B %Y')
 
 four_days = (three_days_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 
@@ -40,7 +40,7 @@ four_days = (three_days_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 # In[3]:
 
 
-data_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd101_gas_import_export.csv'
+data_url = 'https://www.uvek-gis.admin.ch/BFE/ogd/101/ogd101_gas_import_export.csv'
 
 df = pd.read_csv(data_url)
 
@@ -77,7 +77,7 @@ mean_10d = df[df['Datum'] == four_days]['mean_10d'].values[0]
 def texter_gas(net_import, mean_10d):
     diff_pct = (int(round(net_import)) - int(round(mean_10d))) / int(round(mean_10d)) * 100
     
-    if diff_pct >= 15:
+    if diff_pct >= 20:
         return 'deutlich mehr als'
     elif diff_pct >= 5:
         return 'mehr als'
@@ -87,7 +87,7 @@ def texter_gas(net_import, mean_10d):
         return 'gleich viel wie'
     elif diff_pct < 2 and diff_pct > -2:
         return 'etwa gleich viel wie'
-    elif diff_pct <= -15:
+    elif diff_pct <= -20:
         return 'deutlich weniger als'
     elif diff_pct <= -5:
         return 'weniger als'
@@ -195,7 +195,7 @@ df_final = pd.DataFrame(data)
 
 # **Datawrapper-Update**
 
-# In[16]:
+# In[15]:
 
 
 chart_id = 'bRi1m'
@@ -203,7 +203,7 @@ chart_id = 'bRi1m'
 
 # Daten in die Grafik laden
 
-# In[17]:
+# In[16]:
 
 
 def data_uploader(chart_id, df_func):
@@ -239,11 +239,10 @@ def data_uploader(chart_id, df_func):
 
 # Die Grafik wird nur aktualisiert, wenn der der aktuelle Gasimport-Wert nicht mehr als dreimal so gross ist wie der Durchschnitt der letzten 10 Tage. Wir haben vereinzelt unplausibel hohe Ausreisser in den Daten beobachtet. In einem solchen Fall soll die Grafik nicht aktualisiert werden (einzelne Tage betroffen.)
 
-# In[18]:
+# In[17]:
 
 
 if net_import < mean_10d * 3:
-    print('yes')
     data_uploader(chart_id, df_final)
 
 
