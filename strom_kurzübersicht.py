@@ -35,43 +35,43 @@ yesterday_str = yesterday_raw.strftime('%-d. %B %Y')
 day_before_yesterday = (yesterday_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 
 
-# **Stromverbrauch**
-
 # In[3]:
 
 
-data_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd103_stromverbrauch_geschaetzt_swissgrid.csv'
+r = requests.get('https://energiedashboard.admin.ch/api/strom-produktion-import-verbrauch')
 
-df = pd.read_csv(data_url)
+r = r.json()
 
+df = pd.DataFrame(r['entries'])
 
-# In[4]:
-
-
-df['Datum'] = pd.to_datetime(df['Datum'])
-
-
-# Wir nehmen den gestrigen Verbrauchswert und das 10-Tages-Mittel.
 
 # In[5]:
 
 
-df['mean_10d'] = df['Landesverbrauch_geschaetzt_SG_GWh'].rolling(10).mean()
+df['date'] = pd.to_datetime(df['date'])
 
-usage = df[df['Datum'] == yesterday]['Landesverbrauch_geschaetzt_SG_GWh'].values[0]
 
-mean_10d = df[df['Datum'] == day_before_yesterday]['mean_10d'].values[0]
+# Wir nehmen den gestrigen Verbrauchswert und das 10-Tages-Mittel.
+
+# In[9]:
+
+
+df['mean_10d'] = df['stromverbrauch'].rolling(10).mean()
+
+usage = df[df['date'] == yesterday]['stromverbrauch'].values[0]
+
+mean_10d = df[df['date'] == day_before_yesterday]['mean_10d'].values[0]
 
 
 # Anhand dieser Funktion wird die textliche Gegenüberstellung des aktuellen und des 10-Tage-Mittel-Verbrauchs gemacht.
 
-# In[6]:
+# In[10]:
 
 
 def texter_strom(usage, mean_10d):
     diff_pct = (int(round(usage)) - int(round(mean_10d))) / int(round(mean_10d)) * 100
     
-    if diff_pct >= 15:
+    if diff_pct >= 20:
         return 'deutlich mehr als'
     elif diff_pct >= 5:
         return 'mehr als'
@@ -81,7 +81,7 @@ def texter_strom(usage, mean_10d):
         return 'gleich viel wie'
     elif diff_pct < 2 and diff_pct > -2:
         return 'etwa gleich viel wie'
-    elif diff_pct <= -15:
+    elif diff_pct <= -20:
         return 'deutlich weniger als'
     elif diff_pct <= -5:
         return 'weniger als'
@@ -93,42 +93,26 @@ est_strom = texter_strom(usage, mean_10d)
 
 # **Stromproduktion**
 
-# In[7]:
-
-
-data_url_prod = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd104_stromproduktion_swissgrid.csv'
-
-df_prod = pd.read_csv(data_url_prod)
-
-
 # Für jeden Tag rechnen wir alle Produktionssektoren zusammen und berechnen die gleichen Kennzahlen wie oben.
 
-# In[8]:
+# In[13]:
 
 
-df_prod['Datum'] = pd.to_datetime(df_prod['Datum'])
+df['mean_10d_prod'] = df['eigenproduktion'].rolling(10).mean()
 
-df_prod = df_prod.groupby('Datum')['Produktion_GWh'].sum().to_frame().reset_index()
+prod_date = df.tail(1)['date'].dt.strftime('%d.%m.').values[0]
+production = df.tail(1)['eigenproduktion'].values[0]
 
-
-# In[9]:
-
-
-df_prod['mean_10d'] = df_prod['Produktion_GWh'].rolling(10).mean()
-
-prod_date = df_prod.tail(1)['Datum'].dt.strftime('%d.%m.').values[0]
-production = df_prod.tail(1)['Produktion_GWh'].values[0]
-
-mean_10d_prod = df_prod.tail(2).head(1)['mean_10d'].values[0]
+mean_10d_prod = df.tail(2).head(1)['mean_10d_prod'].values[0]
 
 
-# In[10]:
+# In[14]:
 
 
 def texter_strom_prod(production, mean_10d_prod):
     diff_pct = (int(round(production)) - int(round(mean_10d_prod))) / int(round(mean_10d_prod)) * 100
     
-    if diff_pct >= 15:
+    if diff_pct >= 20:
         return 'deutlich mehr als'
     elif diff_pct >= 5:
         return 'mehr als'
@@ -138,7 +122,7 @@ def texter_strom_prod(production, mean_10d_prod):
         return 'gleich viel wie'
     elif diff_pct < 2 and diff_pct > -2:
         return 'etwa gleich viel wie'
-    elif diff_pct <= -15:
+    elif diff_pct <= -20:
         return 'deutlich weniger als'
     elif diff_pct <= -5:
         return 'weniger als'
@@ -150,7 +134,7 @@ est_strom_prod = texter_strom_prod(production, mean_10d_prod)
 
 # Hier importieren wir die Ampelinformationen, Gefahrenstufe und dazugehöriger Text.
 
-# In[11]:
+# In[15]:
 
 
 ampel_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd108_stufen_energiemangellage.json'
@@ -167,7 +151,7 @@ titel = res['titel@de']
 
 # Wir lesen die Tageswerte von Meteo Schweiz ein. Als Referenzmessstation dient Zürich-Fluntern (SMA). Wir greifen das Tagesmittel ab, das sich in der Spalte tre200d0 befindet. Als Vergleichswert bilden wir das Mittel der vorherigen 10 Tage.
 
-# In[12]:
+# In[16]:
 
 
 weather_url = 'https://data.geo.admin.ch/ch.meteoschweiz.klima/nbcn-tageswerte/nbcn-daily_SMA_current.csv'
@@ -181,7 +165,7 @@ df_weather['mean_10d'] = df_weather['tre200d0'].rolling(10).mean()
 
 # Weil die Wetterdaten von gestern erst im Verlauf des Tages kommen, wir die Grafik aber schon am Morgen updaten, fügen wir die Wetterdaten dynamisch dazu.
 
-# In[13]:
+# In[17]:
 
 
 try:
@@ -198,7 +182,7 @@ except IndexError as e:
 
 # Anhand dieser Funktion wird der textliche Vergleich der aktuellsten Temperatur mit dem 10-Tage-Mittel gemacht.
 
-# In[14]:
+# In[18]:
 
 
 def texter_temp(temperature, mean_temp_10d):
@@ -222,7 +206,7 @@ def texter_temp(temperature, mean_temp_10d):
 
 # Hier werden die Texte zusammengesetzt und in ein DataFrame verpackt.
 
-# In[15]:
+# In[19]:
 
 
 icon_url = 'https://chm-editorial-data-static.s3.eu-west-1.amazonaws.com/red_mantel/energiedashboard/icons/blitz.png'
@@ -238,7 +222,7 @@ text_bundesrat = f'Beurteilung Bundesrat: <strong>{titel}</strong> (Gefahrenstuf
 
 # Den Temperaturteil fügen wir nur dazu, wenn die Angaben vorhanden sind.
 
-# In[16]:
+# In[20]:
 
 
 if temperature != 'nicht verfügbar' and mean_temp_10d != 'nicht verfügbar':
@@ -247,7 +231,7 @@ if temperature != 'nicht verfügbar' and mean_temp_10d != 'nicht verfügbar':
     text_comparison += f' Dies bei <strong>{est_temp}</strong> Temperaturen (Zürich).'
 
 
-# In[17]:
+# In[21]:
 
 
 data = [
@@ -258,7 +242,7 @@ data = [
 ]
 
 
-# In[18]:
+# In[22]:
 
 
 df_final = pd.DataFrame(data)
@@ -266,7 +250,7 @@ df_final = pd.DataFrame(data)
 
 # **Datawrapper-Update**
 
-# In[19]:
+# In[24]:
 
 
 chart_id = 'YNAIQ'
@@ -274,7 +258,7 @@ chart_id = 'YNAIQ'
 
 # Daten in die Grafik laden.
 
-# In[20]:
+# In[25]:
 
 
 def data_uploader(chart_id, df_func):
@@ -308,7 +292,7 @@ def data_uploader(chart_id, df_func):
         print(chart_id + ': ' + str(status_code2))
 
 
-# In[21]:
+# In[26]:
 
 
 data_uploader(chart_id, df_final)
