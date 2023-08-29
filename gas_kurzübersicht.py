@@ -40,75 +40,62 @@ four_days = (three_days_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 # In[3]:
 
 
-data_url = 'https://www.uvek-gis.admin.ch/BFE/ogd/101/ogd101_gas_import_export.csv'
+data_url = 'https://energiedashboard.admin.ch/api/gas-import/karte'
 
-df = pd.read_csv(data_url)
+r = requests.get(data_url)
 
+r = r.json()
 
-# Wegen doppelter Einträge im Datensatz entfernen wir die Duplikate und behalten nur den aktuellesten Eintrag pro Tag. Ebenfalls eliminieren wir unplausible Einträge, konkret Negativwerte.
 
 # In[4]:
 
 
-df['Datum'] = pd.to_datetime(df['Datum'])
+netto_import_ch = r['nettoImportCH']
 
-df.drop_duplicates(subset=['Datum'], keep='last', inplace=True)
+trend_en = r['trend']
 
-df = df[df['Nettoimport_CH_GWh'] > 0].copy()
-
-
-# Wir bilden das 10-Tages-Mittel und extrahieren den aktuellsten Tageswert sowie das 10-Tages-Mittel des Tages zuvor.
 
 # In[5]:
 
 
-df['mean_10d'] = df['Nettoimport_CH_GWh'].rolling(10).mean()
-
-net_import = df[df['Datum'] == three_days]['Nettoimport_CH_GWh'].values[0]
-
-mean_10d = df[df['Datum'] == four_days]['mean_10d'].values[0]
-
-
-# Anhand dieser Funktion wird die textliche Gegenüberstellung des aktuellen und des 10-Tage-Mittel-Nettoimports gemacht. Weil wir in der Grafik nur ganze Zahlen abbilden, rechnen wir die Differenz ebenfalls mit ganzen Zahlen, damit das textliche Prädikat letztlich mit den Zahlen übereinstimmt.
-
-# In[6]:
-
-
-def texter_gas(net_import, mean_10d):
-    diff_pct = (int(round(net_import)) - int(round(mean_10d))) / int(round(mean_10d)) * 100
-    
-    if diff_pct >= 20:
-        return 'deutlich mehr als'
-    elif diff_pct >= 5:
-        return 'mehr als'
-    elif diff_pct >= 2:
+def trend_setter(trend):
+    if trend == 'up_mild':
         return 'leicht mehr als'
-    elif diff_pct == 0:
-        return 'gleich viel wie'
-    elif diff_pct < 2 and diff_pct > -2:
-        return 'etwa gleich viel wie'
-    elif diff_pct <= -20:
-        return 'deutlich weniger als'
-    elif diff_pct <= -5:
-        return 'weniger als'
-    elif diff_pct <= -2:
+    elif trend == 'up_strong':
+        return 'mehr als'
+    elif trend == 'down_mild':
         return 'leicht weniger als'
-    
-est_gas = texter_gas(net_import, mean_10d)
+    elif trend == 'down_strong':
+        return 'weniger als'
+    else:
+        return ''
+
+
+# In[8]:
+
+
+trend_de = trend_setter(trend_en)
+
+
+# In[10]:
+
+
+if trend_de == '':
+    raise ValueError('Unbekannter Trend, Übersetzung nicht möglich.')
 
 
 # **Wetter**
 
 # Wir lesen die Tageswerte von Meteo Schweiz ein. Als Referenzmessstation dient Zürich-Fluntern (SMA). Wir greifen das Tagesmittel ab, das sich in der Spalte tre200d0 befindet. Als Vergleichswert bilden wir das Mittel der vorherigen 10 Tage.
 
-# In[7]:
+# In[11]:
 
 
 weather_url = 'https://data.geo.admin.ch/ch.meteoschweiz.klima/nbcn-tageswerte/nbcn-daily_SMA_current.csv'
 df_weather = pd.read_csv(weather_url, delimiter=';')
 
 
-# In[8]:
+# In[12]:
 
 
 df_weather['date'] = pd.to_datetime(df_weather['date'], format='%Y%m%d')
@@ -116,7 +103,7 @@ df_weather['date'] = pd.to_datetime(df_weather['date'], format='%Y%m%d')
 df_weather['mean_10d'] = df_weather['tre200d0'].rolling(10).mean()
 
 
-# In[9]:
+# In[13]:
 
 
 temperature = df_weather[df_weather['date'] == three_days]['tre200d0'].values[0]
@@ -126,7 +113,7 @@ mean_temp_10d = df_weather[df_weather['date'] == four_days]['mean_10d'].values[0
 
 # Anhand dieser Funktion wird der textliche Vergleich der aktuellsten Temperatur mit dem 10-Tage-Mittel gemacht.
 
-# In[10]:
+# In[14]:
 
 
 def texter_temp(temperature, mean_temp_10d):
@@ -152,7 +139,7 @@ est_temp = texter_temp(temperature, mean_temp_10d)
 
 # Hier importieren wir die Ampelinformationen, Gefahrenstufe und dazugehöriger Text.
 
-# In[11]:
+# In[15]:
 
 
 ampel_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd108_stufen_energiemangellage.json'
@@ -167,17 +154,17 @@ titel = res['titel@de']
 
 # Hier werden die Texte zusammengesetzt und in ein DataFrame verpackt.
 
-# In[12]:
+# In[17]:
 
 
 icon_url = 'https://chm-editorial-data-static.s3.eu-west-1.amazonaws.com/red_mantel/energiedashboard/icons/erdgas.png'
 
-text_net_import = f'<strong style="font-size:32px">{int(round(net_import))} GWh</strong>&nbsp <span style="letter-spacing:0.75px">ungefährer Wert</span>'
-text_comparison = f'''So viel <b>Erdgas</b> importierte die Schweiz am {three_days_str} netto.<br><br> Das ist <b>{est_gas}</b> im Durchschnitt der vorherigen zehn Tage mit {int(round(mean_10d))} Gigawattstunden (GWh). Dies bei <strong>{est_temp}</strong> Temperaturen (Zürich).'''
+text_net_import = f'<strong style="font-size:32px">{int(round(netto_import_ch))} GWh</strong>&nbsp <span style="letter-spacing:0.75px">ungefährer Wert</span>'
+text_comparison = f'''So viel <b>Erdgas</b> importierte die Schweiz am {three_days_str} netto.<br><br> Das ist <b>{trend_de}</b> im Durchschnitt der vorherigen zehn Tage. Dies bei <strong>{est_temp}</strong> Temperaturen (Zürich).'''
 text_bundesrat = f'Beurteilung Bundesrat: <strong>{titel}</strong> (Gefahrenstufe {level} von 5)'
 
 
-# In[13]:
+# In[18]:
 
 
 data = [
@@ -187,7 +174,7 @@ data = [
 ]
 
 
-# In[14]:
+# In[19]:
 
 
 df_final = pd.DataFrame(data)
@@ -195,7 +182,7 @@ df_final = pd.DataFrame(data)
 
 # **Datawrapper-Update**
 
-# In[15]:
+# In[20]:
 
 
 chart_id = 'bRi1m'
@@ -203,7 +190,7 @@ chart_id = 'bRi1m'
 
 # Daten in die Grafik laden
 
-# In[16]:
+# In[21]:
 
 
 def data_uploader(chart_id, df_func):
@@ -237,13 +224,10 @@ def data_uploader(chart_id, df_func):
         print(chart_id + ': ' + str(status_code2))
 
 
-# Die Grafik wird nur aktualisiert, wenn der der aktuelle Gasimport-Wert nicht mehr als dreimal so gross ist wie der Durchschnitt der letzten 10 Tage. Wir haben vereinzelt unplausibel hohe Ausreisser in den Daten beobachtet. In einem solchen Fall soll die Grafik nicht aktualisiert werden (einzelne Tage betroffen.)
-
-# In[17]:
+# In[24]:
 
 
-if net_import < mean_10d * 3:
-    data_uploader(chart_id, df_final)
+data_uploader(chart_id, df_final)
 
 
 # **Definitionen**
