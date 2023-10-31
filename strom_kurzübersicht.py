@@ -5,7 +5,7 @@
 # - Produktion: https://opendata.swiss/de/dataset/energiedashboard-ch-stromproduktion-swissgrid
 # - Wetterdaten: https://opendata.swiss/de/dataset/klimamessnetz-tageswerte
 
-# In[1]:
+# In[ ]:
 
 
 import requests
@@ -25,7 +25,7 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 # Wir beziehen immer die Daten von gestern.
 
-# In[2]:
+# In[ ]:
 
 
 yesterday_raw = datetime.today() - timedelta(days=1)
@@ -35,106 +35,66 @@ yesterday_str = yesterday_raw.strftime('%-d. %B %Y')
 day_before_yesterday = (yesterday_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 
 
-# In[3]:
+# In[ ]:
 
 
-r = requests.get('https://energiedashboard.admin.ch/api/strom-produktion-import-verbrauch')
+r = requests.get('https://energiedashboard.admin.ch/api/strom/v2/strom-verbrauch/landesverbrauch-mit-prognose')
 
 r = r.json()
 
-df = pd.DataFrame(r['entries'])
+df = pd.DataFrame(r['currentEntry'], index=[0])
 
 
-# In[5]:
+# Verbrauch
+
+# In[ ]:
 
 
 df['date'] = pd.to_datetime(df['date'])
 
 
-# Wir nehmen den gestrigen Verbrauchswert und das 10-Tages-Mittel.
-
-# In[9]:
+# In[ ]:
 
 
-df['mean_10d'] = df['stromverbrauch'].rolling(10).mean()
-
-usage = df[df['date'] == yesterday]['stromverbrauch'].values[0]
-
-mean_10d = df[df['date'] == day_before_yesterday]['mean_10d'].values[0]
+usage = df['landesverbrauchPrognose'].values[0]
 
 
-# Anhand dieser Funktion wird die textliche Gegenüberstellung des aktuellen und des 10-Tage-Mittel-Verbrauchs gemacht.
-
-# In[10]:
+# In[ ]:
 
 
-def texter_strom(usage, mean_10d):
-    diff_pct = (int(round(usage)) - int(round(mean_10d))) / int(round(mean_10d)) * 100
-    
-    if diff_pct >= 20:
-        return 'deutlich mehr als'
-    elif diff_pct >= 5:
-        return 'mehr als'
-    elif diff_pct >= 2:
+date = df['date'].dt.strftime('%-d. %B %Y').values[0]
+
+
+# In[ ]:
+
+
+trend_en = df['trend'].values[0]
+
+
+# In[ ]:
+
+
+def trend_setter(trend):
+    if trend == 'up_mild':
         return 'leicht mehr als'
-    elif diff_pct == 0:
-        return 'gleich viel wie'
-    elif diff_pct < 2 and diff_pct > -2:
-        return 'etwa gleich viel wie'
-    elif diff_pct <= -20:
-        return 'deutlich weniger als'
-    elif diff_pct <= -5:
-        return 'weniger als'
-    elif diff_pct <= -2:
-        return 'leicht weniger als'
-    
-est_strom = texter_strom(usage, mean_10d)
-
-
-# **Stromproduktion**
-
-# Für jeden Tag rechnen wir alle Produktionssektoren zusammen und berechnen die gleichen Kennzahlen wie oben.
-
-# In[13]:
-
-
-df['mean_10d_prod'] = df['eigenproduktion'].rolling(10).mean()
-
-prod_date = df.tail(1)['date'].dt.strftime('%d.%m.').values[0]
-production = df.tail(1)['eigenproduktion'].values[0]
-
-mean_10d_prod = df.tail(2).head(1)['mean_10d_prod'].values[0]
-
-
-# In[14]:
-
-
-def texter_strom_prod(production, mean_10d_prod):
-    diff_pct = (int(round(production)) - int(round(mean_10d_prod))) / int(round(mean_10d_prod)) * 100
-    
-    if diff_pct >= 20:
-        return 'deutlich mehr als'
-    elif diff_pct >= 5:
+    elif trend == 'up_strong':
         return 'mehr als'
-    elif diff_pct >= 2:
-        return 'leicht mehr als'
-    elif diff_pct == 0:
-        return 'gleich viel wie'
-    elif diff_pct < 2 and diff_pct > -2:
-        return 'etwa gleich viel wie'
-    elif diff_pct <= -20:
-        return 'deutlich weniger als'
-    elif diff_pct <= -5:
-        return 'weniger als'
-    elif diff_pct <= -2:
+    elif trend == 'down_mild':
         return 'leicht weniger als'
-    
-est_strom_prod = texter_strom_prod(production, mean_10d_prod)
+    elif trend == 'down_strong':
+        return 'weniger als'
+    else:
+        return ''
+
+trend_de = trend_setter(trend_en)
+
+if trend_de == '':
+    raise ValueError('Unbekannter Trend, Übersetzung nicht möglich.')
 
 
 # Hier importieren wir die Ampelinformationen, Gefahrenstufe und dazugehöriger Text.
 
-# In[15]:
+# In[ ]:
 
 
 ampel_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd108_stufen_energiemangellage.json'
@@ -151,7 +111,7 @@ titel = res['titel@de']
 
 # Wir lesen die Tageswerte von Meteo Schweiz ein. Als Referenzmessstation dient Zürich-Fluntern (SMA). Wir greifen das Tagesmittel ab, das sich in der Spalte tre200d0 befindet. Als Vergleichswert bilden wir das Mittel der vorherigen 10 Tage.
 
-# In[16]:
+# In[ ]:
 
 
 weather_url = 'https://data.geo.admin.ch/ch.meteoschweiz.klima/nbcn-tageswerte/nbcn-daily_SMA_current.csv'
@@ -165,7 +125,7 @@ df_weather['mean_10d'] = df_weather['tre200d0'].rolling(10).mean()
 
 # Weil die Wetterdaten von gestern erst im Verlauf des Tages kommen, wir die Grafik aber schon am Morgen updaten, fügen wir die Wetterdaten dynamisch dazu.
 
-# In[17]:
+# In[ ]:
 
 
 try:
@@ -182,7 +142,7 @@ except IndexError as e:
 
 # Anhand dieser Funktion wird der textliche Vergleich der aktuellsten Temperatur mit dem 10-Tage-Mittel gemacht.
 
-# In[18]:
+# In[ ]:
 
 
 def texter_temp(temperature, mean_temp_10d):
@@ -206,23 +166,21 @@ def texter_temp(temperature, mean_temp_10d):
 
 # Hier werden die Texte zusammengesetzt und in ein DataFrame verpackt.
 
-# In[19]:
+# In[ ]:
 
 
 icon_url = 'https://chm-editorial-data-static.s3.eu-west-1.amazonaws.com/red_mantel/energiedashboard/icons/blitz.png'
 
 text_usage = f'<strong style="font-size:32px">{int(round(usage))} GWh</strong>&nbsp <span style="letter-spacing:0.75px">geschätzter Wert</span>'
 
-text_comparison = f'''So viel <b>Strom</b> verbrauchte die Schweiz am {yesterday_str} (inkl. Speicherpumpen).<br><br> Das ist <b>{est_strom}</b> im Durchschnitt der vorherigen zehn Tage mit {int(round(mean_10d))} Gigawattstunden (GWh). '''
-
-text_production = f'''Die Schweiz <b>produzierte</b> {int(round(production))} GWh Strom ({prod_date}, Schätzwert). Das ist <b>{est_strom_prod}</b> im Zehn-Tages-Durchschnitt mit {int(round(mean_10d_prod))} GWh.'''
+text_comparison = f'''So viel <b>Strom</b> verbrauchte die Schweiz am {date} (inkl. Speicherpumpen).<br><br> Das ist <b>{trend_de}</b> im Durchschnitt der vorherigen zehn Tage. '''
 
 text_bundesrat = f'Beurteilung Bundesrat: <strong>{titel}</strong> (Gefahrenstufe {level} von 5)'
 
 
 # Den Temperaturteil fügen wir nur dazu, wenn die Angaben vorhanden sind.
 
-# In[20]:
+# In[ ]:
 
 
 if temperature != 'nicht verfügbar' and mean_temp_10d != 'nicht verfügbar':
@@ -231,18 +189,17 @@ if temperature != 'nicht verfügbar' and mean_temp_10d != 'nicht verfügbar':
     text_comparison += f' Dies bei <strong>{est_temp}</strong> Temperaturen (Zürich).'
 
 
-# In[21]:
+# In[ ]:
 
 
 data = [
     {'icon': f'![]({icon_url})', 'text': text_usage},
     {'icon': np.nan, 'text': text_comparison},
-    {'icon': np.nan, 'text': text_production},
     {'icon': np.nan, 'text': text_bundesrat}
 ]
 
 
-# In[22]:
+# In[ ]:
 
 
 df_final = pd.DataFrame(data)
@@ -250,7 +207,7 @@ df_final = pd.DataFrame(data)
 
 # **Datawrapper-Update**
 
-# In[24]:
+# In[ ]:
 
 
 chart_id = 'YNAIQ'
@@ -258,7 +215,7 @@ chart_id = 'YNAIQ'
 
 # Daten in die Grafik laden.
 
-# In[25]:
+# In[ ]:
 
 
 def data_uploader(chart_id, df_func):
@@ -292,7 +249,7 @@ def data_uploader(chart_id, df_func):
         print(chart_id + ': ' + str(status_code2))
 
 
-# In[26]:
+# In[ ]:
 
 
 data_uploader(chart_id, df_final)
