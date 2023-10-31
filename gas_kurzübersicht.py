@@ -37,17 +37,17 @@ four_days = (three_days_raw - timedelta(days=1)).strftime('%Y-%m-%d')
 
 # **Datenimport Nettimport**
 
-# In[3]:
+# In[7]:
 
 
-data_url = 'https://energiedashboard.admin.ch/api/gas-import/karte'
+data_url = 'https://energiedashboard.admin.ch/api/gas/gas-import/karte'
 
 r = requests.get(data_url)
 
 r = r.json()
 
 
-# In[4]:
+# In[8]:
 
 
 netto_import_ch = r['nettoImportCH']
@@ -55,7 +55,7 @@ netto_import_ch = r['nettoImportCH']
 trend_en = r['trend']
 
 
-# In[5]:
+# In[9]:
 
 
 def trend_setter(trend):
@@ -71,13 +71,13 @@ def trend_setter(trend):
         return ''
 
 
-# In[8]:
+# In[10]:
 
 
 trend_de = trend_setter(trend_en)
 
 
-# In[10]:
+# In[11]:
 
 
 if trend_de == '':
@@ -88,14 +88,14 @@ if trend_de == '':
 
 # Wir lesen die Tageswerte von Meteo Schweiz ein. Als Referenzmessstation dient Zürich-Fluntern (SMA). Wir greifen das Tagesmittel ab, das sich in der Spalte tre200d0 befindet. Als Vergleichswert bilden wir das Mittel der vorherigen 10 Tage.
 
-# In[11]:
+# In[12]:
 
 
 weather_url = 'https://data.geo.admin.ch/ch.meteoschweiz.klima/nbcn-tageswerte/nbcn-daily_SMA_current.csv'
 df_weather = pd.read_csv(weather_url, delimiter=';')
 
 
-# In[12]:
+# In[13]:
 
 
 df_weather['date'] = pd.to_datetime(df_weather['date'], format='%Y%m%d')
@@ -103,7 +103,7 @@ df_weather['date'] = pd.to_datetime(df_weather['date'], format='%Y%m%d')
 df_weather['mean_10d'] = df_weather['tre200d0'].rolling(10).mean()
 
 
-# In[13]:
+# In[14]:
 
 
 temperature = df_weather[df_weather['date'] == three_days]['tre200d0'].values[0]
@@ -113,7 +113,7 @@ mean_temp_10d = df_weather[df_weather['date'] == four_days]['mean_10d'].values[0
 
 # Anhand dieser Funktion wird der textliche Vergleich der aktuellsten Temperatur mit dem 10-Tage-Mittel gemacht.
 
-# In[14]:
+# In[15]:
 
 
 def texter_temp(temperature, mean_temp_10d):
@@ -139,7 +139,7 @@ est_temp = texter_temp(temperature, mean_temp_10d)
 
 # Hier importieren wir die Ampelinformationen, Gefahrenstufe und dazugehöriger Text.
 
-# In[15]:
+# In[16]:
 
 
 ampel_url = 'https://bfe-energy-dashboard-ogd.s3.amazonaws.com/ogd108_stufen_energiemangellage.json'
@@ -224,7 +224,7 @@ def data_uploader(chart_id, df_func):
         print(chart_id + ': ' + str(status_code2))
 
 
-# In[24]:
+# In[22]:
 
 
 data_uploader(chart_id, df_final)
