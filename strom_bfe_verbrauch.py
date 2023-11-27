@@ -24,7 +24,8 @@ locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 
 #data_url_2022 = 'https://energiedashboard.admin.ch/api/strom-verbrauch/historical-values'
-data_url = 'https://energiedashboard.admin.ch/api/v2/strom-verbrauch/landesverbrauch-mit-prognose'
+#data_url = 'https://energiedashboard.admin.ch/api/v2/strom-verbrauch/landesverbrauch-mit-prognose'
+data_url = 'https://energiedashboard.admin.ch/api/strom/v2/strom-verbrauch/landesverbrauch-mit-prognose'
 
 r = requests.get(data_url)
 
@@ -50,7 +51,7 @@ df.columns = ['date', 'Verbrauch gemeldet', 'Verbrauch geschätzt', 'Prognose', 
 # In[5]:
 
 
-df = df[df['date'] >= '2022-09-01'].copy()
+df = df[df['date'] >= '2023-01-01'].copy()
 
 
 # In[6]:
@@ -62,18 +63,19 @@ last_updated = (last_updated + timedelta(days=1)).dt.strftime('%-d. %B %Y').valu
 
 # **Endverbrauch**
 
-# In[7]:
+# In[17]:
 
 
 #data_url_end_2022 = 'https://energiedashboard.admin.ch/api/strom-verbrauch/endverbrauch'
-data_url_end = 'https://energiedashboard.admin.ch/api/v2/strom-verbrauch/endverbrauch'
+#data_url_end = 'https://energiedashboard.admin.ch/api/v2/strom-verbrauch/endverbrauch'
+data_url_end = 'https://energiedashboard.admin.ch/api/strom/v2/strom-verbrauch/endverbrauch'
 
 res = requests.get(data_url_end)
 
 res = res.json()
 
 
-# In[8]:
+# In[18]:
 
 
 df_end = pd.DataFrame(res)
@@ -85,7 +87,7 @@ df_end = pd.DataFrame(res)
 df_end['date'] = pd.to_datetime(df_end['date'])
 
 
-# In[10]:
+# In[20]:
 
 
 df_end = df_end[['date', 'endverbrauch', 'prognoseMittelwert', 'fiveYearMittelwert', 'fiveYearMin', 'fiveYearMax']].copy()
@@ -93,10 +95,10 @@ df_end = df_end[['date', 'endverbrauch', 'prognoseMittelwert', 'fiveYearMittelwe
 df_end.columns = ['date', 'Endverbrauch gemeldet', 'Endverbrauch geschätzt', 'Mittelwert', 'Minimum', 'Maximum']
 
 
-# In[11]:
+# In[21]:
 
 
-df_end = df_end[df_end['date'] >= '2022-09-01'].copy()
+df_end = df_end[df_end['date'] >= '2023-01-01'].copy()
 
 
 # **Datawrapper-Grafiken updaten**
