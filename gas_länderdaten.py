@@ -25,7 +25,7 @@ import os
 locale.setlocale(locale.LC_TIME, 'de_CH.UTF-8')
 
 
-# In[2]:
+# In[ ]:
 
 
 today = datetime.today().strftime('%Y-%m-%d')
@@ -35,10 +35,13 @@ today = datetime.today().strftime('%Y-%m-%d')
 
 # Aktuelle url scrapen
 
-# In[3]:
+# In[ ]:
 
 
-res = requests.get('https://www.bruegel.org/dataset/european-natural-gas-imports')
+headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'}
+
+
+res = requests.get('https://www.bruegel.org/dataset/european-natural-gas-imports', headers=headers)
 
 soup = BeautifulSoup(res.text, 'html.parser')
 
@@ -47,14 +50,14 @@ download_url = 'https://www.bruegel.org' + soup.find('a', title='Download data')
 
 # Aktuelle url laden und Abgleich mit heruntergeladener url machen. Wenn heruntergeladene neu ist, als aktuelle speichern.
 
-# In[7]:
+# In[ ]:
 
 
 with open('/root/energiemonitor/current_bruegel_url.txt', 'r') as file:
     current_url = file.read()
 
 
-# In[9]:
+# In[ ]:
 
 
 if download_url != current_url:
@@ -67,15 +70,15 @@ if download_url != current_url:
 
 # Daten herunterladen und einlesen
 
-# In[11]:
+# In[ ]:
 
 
-r = requests.get(current_url, stream=True)
+r = requests.get(current_url, stream=True, headers=headers)
 z = zipfile.ZipFile(io.BytesIO(r.content))
 z.extractall(f'/root/energiemonitor/Rohdaten/Bruegel/{today}')
 
 
-# In[15]:
+# In[ ]:
 
 
 for document in os.listdir(f'/root/energiemonitor/Rohdaten/Bruegel/{today}/'):
@@ -83,7 +86,7 @@ for document in os.listdir(f'/root/energiemonitor/Rohdaten/Bruegel/{today}/'):
         current_document = document
 
 
-# In[4]:
+# In[ ]:
 
 
 df = pd.read_excel(f'/root/energiemonitor/Rohdaten/Bruegel/{today}/{current_document}')
@@ -91,7 +94,7 @@ df = pd.read_excel(f'/root/energiemonitor/Rohdaten/Bruegel/{today}/{current_docu
 
 # Formatieren
 
-# In[5]:
+# In[ ]:
 
 
 df = df.iloc[1:].copy()
@@ -99,7 +102,7 @@ df = df.iloc[1:].copy()
 
 # Komma durch Punkt ersetzen
 
-# In[6]:
+# In[ ]:
 
 
 df = df.replace(',', '', regex=True)
@@ -107,7 +110,7 @@ df = df.replace(',', '', regex=True)
 
 # Für jedes Lieferantenland ein eigenes df erstellen
 
-# In[7]:
+# In[ ]:
 
 
 df_eu = df[['week', 'EU_2023', 'EU_2022', 'EU_max', 'EU_min']].copy()
@@ -119,7 +122,7 @@ df_alg = df[['week', 'Algeria_2023', 'Algeria_2022', 'Algeria_max', 'Algeria_min
 
 # Spalten umbennen
 
-# In[8]:
+# In[ ]:
 
 
 df_eu.rename(columns={
@@ -165,7 +168,7 @@ df_alg.rename(columns={
 
 # **Datawrapper-Update**
 
-# In[10]:
+# In[ ]:
 
 
 chart_ids = {
@@ -179,7 +182,7 @@ chart_ids = {
 
 # **Daten-Upload**
 
-# In[11]:
+# In[ ]:
 
 
 last_updated = datetime.today()
